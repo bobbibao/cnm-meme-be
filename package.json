@@ -1,0 +1,22 @@
+{
+  "name": "meme_backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "create_db": "node server/config/db/index.js",
+    "start": "nodemon --inspect server/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "mongoose": "^8.1.0",
+    "nodemon": "^2.0.22",
+    "passport": "^0.7.0"
+  }
+}
