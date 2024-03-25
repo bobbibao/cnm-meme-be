@@ -4,7 +4,8 @@ const authenticateJWT = require('../middleware/auth');
 // some functions for testing, not used in the final version
 const {
     listMessage,
-    sendMessage } = require("../controllers/messageController");
+    sendMessage,
+    unsendMessage } = require("../controllers/messageController");
 
 const { 
     loginController, 
@@ -14,11 +15,15 @@ const {
     listDirect, 
     getMessages } = require("../controllers/directController");
 
+
 router.get("/list-message", listMessage);
-router.post("/send-message", authenticateJWT, sendMessage);
+router.post("/direct/:direct/send-message", authenticateJWT, sendMessage);
+router.get("/direct/:direct/get-messages", authenticateJWT, getMessages);
+router.patch("/direct/:direct/unsend-message/:messageId, ", authenticateJWT, unsendMessage);
+router.get("/direct/:direct/search-messages, ", authenticateJWT, searchMessages);
+
 router.post("/login", loginController);
 router.get("/list-direct", authenticateJWT, listDirect);
-router.get("/get-messages", authenticateJWT, getMessages);
 router.get("/get-user-by-id", authenticateJWT, getUserById);
 
 module.exports = router;
