@@ -13,9 +13,9 @@ const listMessage = (req, res) => {
       });
 }
 
-const getMessageById = (id) => {
-  return Message.findById(id).exec();
-}
+// const getMessageById = (id) => {
+//   return Message.findById(id).exec();
+// }
 
 const sendMessage = (req, res) => {
   const senderID = req.user.id;
@@ -30,8 +30,32 @@ const sendMessage = (req, res) => {
     });
 }
 
+const unsendMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const message = await Message.findById(messageId);
+    
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    if (!req.user.id.equals(message.sender)) {
+      return res.status(403).json({ error: 'You can only unsend your own messages' });
+    }
+
+    message.content = null;
+    await message.save();
+
+    res.json({ message: 'Message has been unsent' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+
 module.exports = {
   listMessage,
   sendMessage,
-  getMessageById
+  unsendMessage
 }
