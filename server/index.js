@@ -4,6 +4,8 @@ const bodyParser = require("body-parser");
 const router = require("./routes");
 const cors = require('cors');
 const { default: mongoose } = require("mongoose");
+
+require("dotenv").config();
 const port = process.env.PORT || 3000;
 const mongodb_connect_string = process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/test';
 

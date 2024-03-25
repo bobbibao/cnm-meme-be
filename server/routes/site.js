@@ -1,15 +1,24 @@
 const router = require("express").Router();
-const auth = require('../middleware/auth');
+const authenticateJWT = require('../middleware/auth');
 
-// Import các function đã định nghĩa trong file controllers
+// some functions for testing, not used in the final version
 const {
-    listOrder,
-    // createUser,
-} = require("../controllers/orderController");
+    listMessage,
+    sendMessage } = require("../controllers/messageController");
 
-//User
-// truyền thêm tham số auth nếu api đó cần xác thực người dùng
-router.get("/list-order", listOrder);
-//   router.post("/create-user", auth, createUser);
+const { 
+    loginController, 
+    getUserById } = require("../controllers/userController");
+
+const { 
+    listDirect, 
+    getMessages } = require("../controllers/directController");
+
+router.get("/list-message", listMessage);
+router.post("/send-message", authenticateJWT, sendMessage);
+router.post("/login", loginController);
+router.get("/list-direct", authenticateJWT, listDirect);
+router.get("/get-messages", authenticateJWT, getMessages);
+router.get("/get-user-by-id", authenticateJWT, getUserById);
 
 module.exports = router;
