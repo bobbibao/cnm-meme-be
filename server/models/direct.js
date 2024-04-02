@@ -1,32 +1,22 @@
 const Mongoose = require('mongoose');
 const { Schema, Types } = Mongoose;
 
+//direct.js: _id, chatRoomId, receiverId, isOnline, lastActiveTime, isArchived, isDeleted, isMuted, isPinned, hasUnreadMessage, numberOfUnreadMessage
+
 const DirectSchema = new Schema({
-    receiverID: {
+    chatRoomId: {
+        type: Types.ObjectId,
+        ref: 'ChatRoom'
+    },
+    receiverId: {
         type: Types.ObjectId,
         ref: 'User'
-    },
-    active: {
-        type: Boolean,
-        default: true
-    },
-    thumbnailURL: {
-        type: String,
-        default: ''
-    },
-    isDeleted: {
-        type: Boolean,
-        default: false
     },
     isArchived: {
         type: Boolean,
         default: false
     },
-    hasUnreadMessages: {
-        type: Boolean,
-        default: false
-    },
-    hasUnreadMentions: {
+    isDeleted: {
         type: Boolean,
         default: false
     },
@@ -38,13 +28,9 @@ const DirectSchema = new Schema({
         type: Boolean,
         default: false
     },
-    latestMessageAt: {
-        type: Date,
-        default: Date.now
-    },
-    messages: {
-        type: [Schema.Types.ObjectId],
-        default: []
+    unreadMessageCount: {
+        type: Number,
+        default: 0
     }
   });
 
