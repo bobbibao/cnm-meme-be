@@ -15,10 +15,11 @@ const generateToken = (user) => {
 };
 
 const loginController = (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
+  console.log(email, password);
   User.find()
   .then((users) => {
-      const user = users.find(u => u.username === username && u.password === password);
+      const user = users.find(u => u.email === email && u.password === password);
       console.log(user);
       if (!user) {
         return res.status(401).json({ message: 'Invalid credentials' });
@@ -46,4 +47,41 @@ const getUserById = (req, res) => {
     });
 }
 
-module.exports = {loginController, getUserById};
+
+const updateUser = async (req, res) => {
+  try {
+    const userId = req.user.id; // Extract user ID from JWT payload
+    const { displayName, dateOfBirth, phoneNumber } = req.body; // Extract updated profile fields
+    console.log(userId, displayName, dateOfBirth, phoneNumber);
+    // Update user profile in the database
+    const updatedUser = await User.findByIdAndUpdate(userId, {
+      displayName,
+      dateOfBirth,
+      phoneNumber
+    }, { new: true });
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Send back the updated user profile
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const getProfile = async (req, res) => {
+  const user = await User.findById(req.user.id); 
+  const data = {
+    name: user.displayName,
+    email: user.email,
+    gender: user.gender,
+    dob: user.dateOfBirth.toISOString().split('T')[0].split('-').reverse().join('-'),
+    phone: user.phoneNumber
+  };
+  console.log(data);
+  return res.json(apiCode.success(data, "Get Profile Success"));
+}
+module.exports = {loginController, getUserById, updateUser, getProfile};
