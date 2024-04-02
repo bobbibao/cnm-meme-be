@@ -30,6 +30,14 @@ const UserSchema = new Schema({
     type: String,
     default: 'light'
   },
+  isOnline: {
+      type: Boolean,
+      default: true
+  },
+  lastOnlineTime: {
+      type: Date,
+      default: Date.now
+  },
   enable: {
     type: Boolean,
     default: true
@@ -62,14 +70,14 @@ const UserSchema = new Schema({
     type: [Schema.Types.ObjectId],
     default: []
   },
-  groups: {
+  groupDetails: {
     type: [Schema.Types.ObjectId],
     default: []
   }
 });
 
-UserSchema.methods.getDirects = () => {
-  return this.directs;
-}
+// UserSchema.methods.getDirects = () => {
+//   return this.directs;
+// }
 
 module.exports = Mongoose.model('User', UserSchema, 'users');

@@ -1,16 +1,13 @@
 const Mongoose = require('mongoose');
 const { Schema, Types } = Mongoose;
+// groups: name, photoURL, ownerId, chatRoomId, members (userId, addByUserId, roles [], addAt):
 
 const GroupSchema = new Schema({
   name: {
     type: String,
     default: 'New Group'
   },
-  type: {
-    type: String,
-    default: 'group'
-  },
-  ownerID: {
+  ownerId: {
     type: Types.ObjectId,
     default: ''
   },
@@ -18,51 +15,30 @@ const GroupSchema = new Schema({
     type: String,
     default: ''
   },
-  thumbnailURL: {
-    type: String,
-    default: ''
+  chatRoomId: {
+    type: Types.ObjectId,
+    ref: 'ChatRoom'
   },
-  isDeleted: {
-    type: Boolean,
-    default: false
-  },
-  isArchived: {
-    type: Boolean,
-    default: false
-  },
-  hasUnreadMessages: {
-    type: Boolean,
-    default: false
-  },
-  hasUnreadMentions: {
-    type: Boolean,
-    default: false
-  },
-  isMuted: {
-    type: Boolean,
-    default: false
-  },
-  isPinned: {
-    type: Boolean,
-    default: false
-  },
-  createAt: {
-    type: Date,
-    default: Date.now
-  },
-  updateAt: {
-    type: Date,
-    default: Date.now
-  },
-  latestMessageAt: {
-    type: Date,
-    default: Date.now
-  },
-  members:[Schema.Types.ObjectId],
-  messages: {
-    type: [Schema.Types.ObjectId],
-    default: []
-  }
+  members: [
+    {
+      userId: {
+        type: Types.ObjectId,
+        ref: 'User'
+      },
+      addByUserId: {
+        type: Types.ObjectId,
+        ref: 'User'
+      },
+      roles: {
+        type: Array,
+        default: []
+      },
+      addAt: {
+        type: Date,
+        default: Date.now
+      }
+    }
+  ]
 });
 
 module.exports = Mongoose.model('Group', GroupSchema, 'groups');
