@@ -22,7 +22,6 @@
     "nodemon": "^2.0.22",
     "otp-generator": "^4.0.1",
     "passport": "^0.7.0",
-    "twilio": "^5.0.1",
     "validator": "^13.11.0"
   }
 }
