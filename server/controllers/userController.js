@@ -16,6 +16,7 @@ const generateToken = (user) => {
 
 const loginController = (req, res) => {
   const { username, password } = req.body;
+  console.log(username, password);
   User.find()
   .then((users) => {
       const user = users.find(u => u.username === username && u.password === password);
@@ -46,4 +47,29 @@ const getUserById = (req, res) => {
     });
 }
 
-module.exports = {loginController, getUserById};
+
+const updateUser = async (req, res) => {
+  try {
+    const userId = req.user.id; // Extract user ID from JWT payload
+    const { displayName, dateOfBirth, phoneNumber } = req.body; // Extract updated profile fields
+    console.log(userId, displayName, dateOfBirth, phoneNumber);
+    // Update user profile in the database
+    const updatedUser = await User.findByIdAndUpdate(userId, {
+      displayName,
+      dateOfBirth,
+      phoneNumber
+    }, { new: true });
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Send back the updated user profile
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = {loginController, getUserById, updateUser};
