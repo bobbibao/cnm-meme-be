@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
     displayName: { type: String, required: true, minlength: 3, maxlength: 30 },
     gender: {
       type: String,
-      enum: ["Name", "Nữ", "Khác"],
+      enum: ["Nam", "Nữ", "Khác"],
       default: "Khác",
     },
     dateOfBirth: {
@@ -26,7 +26,6 @@ const userSchema = new mongoose.Schema(
     thumbrailURL: { type: String },
     theme: { type: String },
     enable: { type: Boolean, default: true },
-    verificationCode: { type: String },
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     friendRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
