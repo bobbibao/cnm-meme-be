@@ -10,7 +10,8 @@ const {
 const { 
     loginController, 
     getUserById,
-    updateUser } = require("../controllers/userController");
+    updateUser,
+    getProfile } = require("../controllers/userController");
 
 const { 
     listDirect, 
@@ -26,6 +27,7 @@ router.patch("/direct/:direct/unsend-message/:messageId, ", authenticateJWT, uns
 router.post("/login", loginController);
 router.get("/list-direct", authenticateJWT, listDirect);
 router.get("/get-user-by-id", authenticateJWT, getUserById);
+router.get("/profile", authenticateJWT, getProfile);
 router.patch("/profile", authenticateJWT, updateUser);
 
 module.exports = router;

@@ -15,11 +15,11 @@ const generateToken = (user) => {
 };
 
 const loginController = (req, res) => {
-  const { username, password } = req.body;
-  console.log(username, password);
+  const { email, password } = req.body;
+  console.log(email, password);
   User.find()
   .then((users) => {
-      const user = users.find(u => u.username === username && u.password === password);
+      const user = users.find(u => u.email === email && u.password === password);
       console.log(user);
       if (!user) {
         return res.status(401).json({ message: 'Invalid credentials' });
@@ -72,4 +72,16 @@ const updateUser = async (req, res) => {
   }
 };
 
-module.exports = {loginController, getUserById, updateUser};
+const getProfile = async (req, res) => {
+  const user = await User.findById(req.user.id); 
+  const data = {
+    name: user.displayName,
+    email: user.email,
+    gender: user.gender,
+    dob: user.dateOfBirth.toISOString().split('T')[0].split('-').reverse().join('-'),
+    phone: user.phoneNumber
+  };
+  console.log(data);
+  return res.json(apiCode.success(data, "Get Profile Success"));
+}
+module.exports = {loginController, getUserById, updateUser, getProfile};
