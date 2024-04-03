@@ -3,6 +3,7 @@ const OTP = require("../models/otpModel");
 const bcrypt = require("bcrypt");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer"); 
 require("dotenv").config();
 const createToken = (_id) => {
   const jwtkey = process.env.JWT_SECRET_KEY;
@@ -104,14 +105,15 @@ const registerUser = async (req, res) => {
 // Hàm đăng nhập người dùng
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
-  console.log(email);
+  console.log(email, password);
   try {
     // Tìm kiếm người dùng theo email
     let user = await userModel.findOne({ email });
-    if (!user) return res.status(400).json("Invalid email or password...");
+    if (!user) return res.status(400).json("User not found");
 
     // So sánh mật khẩu đã hash với mật khẩu nhập vào
     const isValidPassword = await bcrypt.compare(password, user.password);
+    console.log(password, user.password, isValidPassword);
     if (!isValidPassword)
       return res.status(400).json("Invalid email or password...");
 
@@ -126,8 +128,61 @@ const loginUser = async (req, res) => {
 
 // Hàm forgot password
 const forgotPassword = async (req, res) => {
-  
+  const { email } = req.body;
+  userModel.findOne({ email: email }).then((user) => {
+    if (!user) {
+      return res.send({ Status: "User not existed" });
+    }
+    const token = jwt.sign({ id: user._id }, "jwt_secret_key", {
+      expiresIn: "1d",
+    });
+    var transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS,
+      },
+    });
+
+    var mailOptions = {
+      from: process.env.MAIL_USER,
+      to: email,
+      subject: 'Reset Password Link',
+      text: `http://localhost:3001/reset-password/${user._id}/${token}`,
+    };
+
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        console.log(error);
+      } else {
+        return res.send({ Status: "Success" });
+      }
+    });
+  });
 };
+
+//ResetPassword
+const resetPassword = async(req, res) => {
+  const id = req.params['id']
+  const token = req.params['token'];
+  const { password } = req.body;
+  const salt = await bcrypt.genSalt(10);
+
+  jwt.verify(token, "jwt_secret_key", (err, decoded) => {
+    if (err) {
+      return res.json({ Status: "Error with token" });
+    } else {
+      bcrypt
+        .hash(password, salt)
+        .then((hash) => {
+          userModel.findByIdAndUpdate({ _id: id }, { password: hash })
+            .then((u) => res.send({ Status: "Success" }))
+            .catch((err) => res.send({ Status: err }));
+        })
+        .catch((err) => res.send({ Status: err }));
+    }
+  });
+}
 
 const findUser = async (req, res) => {
   const userId = req.params.userId;
@@ -150,4 +205,11 @@ const getUser = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser, findUser, getUser };
+module.exports = {
+  registerUser,
+  loginUser,
+  findUser,
+  getUser,
+  forgotPassword,
+  resetPassword,
+};
