@@ -105,14 +105,15 @@ const registerUser = async (req, res) => {
 // Hàm đăng nhập người dùng
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
-  console.log(email);
+  console.log(email, password);
   try {
     // Tìm kiếm người dùng theo email
     let user = await userModel.findOne({ email });
-    if (!user) return res.status(400).json("Invalid email or password...");
+    if (!user) return res.status(400).json("User not found");
 
     // So sánh mật khẩu đã hash với mật khẩu nhập vào
     const isValidPassword = await bcrypt.compare(password, user.password);
+    console.log(password, user.password, isValidPassword);
     if (!isValidPassword)
       return res.status(400).json("Invalid email or password...");
 
@@ -162,17 +163,19 @@ const forgotPassword = async (req, res) => {
 
 //ResetPassword
 const resetPassword = async(req, res) => {
-  const { id, token } = req.params;
+  const id = req.params['id']
+  const token = req.params['token'];
   const { password } = req.body;
+  const salt = await bcrypt.genSalt(10);
 
   jwt.verify(token, "jwt_secret_key", (err, decoded) => {
     if (err) {
       return res.json({ Status: "Error with token" });
     } else {
       bcrypt
-        .hash(password, 10)
+        .hash(password, salt)
         .then((hash) => {
-          UserModel.findByIdAndUpdate({ _id: id }, { password: hash })
+          userModel.findByIdAndUpdate({ _id: id }, { password: hash })
             .then((u) => res.send({ Status: "Success" }))
             .catch((err) => res.send({ Status: err }));
         })
