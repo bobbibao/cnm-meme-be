@@ -3,7 +3,10 @@ const OTP = require("../models/otpModel");
 const bcrypt = require("bcrypt");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+
 require("dotenv").config();
+
 const createToken = (_id) => {
   const jwtkey = process.env.JWT_SECRET_KEY;
   return jwt.sign({ _id }, jwtkey, { expiresIn: "3d" });
@@ -12,10 +15,7 @@ const createToken = (_id) => {
 // Bắt lỗi khi đăng ký người dùng
 const registerUser = async (req, res) => {
   try {
-    const {
-      registerData,
-      otp,
-    } = req.body;
+    const { registerData, otp } = req.body;
     const {
       username,
       password,
@@ -26,7 +26,7 @@ const registerUser = async (req, res) => {
       dateOfBirth,
     } = registerData;
 
-    console.log(req.body)
+    console.log(req.body);
     // Kiểm tra xem phone number đã tồn tại chưa
     let user = await userModel.findOne({ phoneNumber });
     if (user)
@@ -124,9 +124,61 @@ const loginUser = async (req, res) => {
   }
 };
 
-// Hàm forgot password
+// Hàm forgot password /forgot-password
 const forgotPassword = async (req, res) => {
-  
+  const { email } = req.body;
+  userModel.findOne({ email: email }).then((user) => {
+    if (!user) {
+      return res.send({ Status: "User not existed" });
+    }
+    const token = jwt.sign({ id: user._id }, "jwt_secret_key", {
+      expiresIn: "1d",
+    });
+    var transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS,
+      },
+    });
+
+    var mailOptions = {
+      from: process.env.MAIL_USER,
+      to: email,
+      subject: "Reset Password Link",
+      text: `http://localhost:3001/new-password/${user._id}/${token}`,
+    };
+
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        console.log(error);
+      } else {
+        return res.send({ Status: "Success" });
+      }
+    });
+  });
+};
+
+// reset-password /reset-password/:id/:token
+const resetPassword = async (req, res) => {
+  const { id, token } = req.params;
+  const { password } = req.body;
+
+  jwt.verify(token, "jwt_secret_key", (err, decoded) => {
+    if (err) {
+      return res.json({ Status: "Error with token" });
+    } else {
+      bcrypt
+        .hash(password, 10)
+        .then((hash) => {
+          userModel
+            .findByIdAndUpdate({ _id: id }, { password: hash })
+            .then((u) => res.send({ Status: "Success" }))
+            .catch((err) => res.send({ Status: err }));
+        })
+        .catch((err) => res.send({ Status: err }));
+    }
+  });
 };
 
 const findUser = async (req, res) => {
@@ -150,4 +202,11 @@ const getUser = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser, findUser, getUser };
+module.exports = {
+  registerUser,
+  loginUser,
+  findUser,
+  getUser,
+  forgotPassword,
+  resetPassword,
+};
