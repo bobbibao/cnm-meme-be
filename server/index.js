@@ -4,8 +4,8 @@ const mongoose = require("mongoose");
 const userRoute = require("./routes/userRoute")
 const otpRoute = require("./routes/otpRoutes")
 const app = express();
-require("dotenv").config();
 
+require("dotenv").config();
 app.use(express.json());
 app.use(cors());
 app.use("/api/users", userRoute);
