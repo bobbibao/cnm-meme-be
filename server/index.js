@@ -1,28 +1,32 @@
 const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const userRoute = require("./routes/userRoute")
+const otpRoute = require("./routes/otpRoutes")
 const app = express();
-const bodyParser = require("body-parser");
-const router = require("./routes");
-const cors = require('cors');
-const { default: mongoose } = require("mongoose");
 
 require("dotenv").config();
-const port = process.env.PORT || 3000;
-const mongodb_connect_string = process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/test';
-
-// Sử dụng cors middleware ở đầu ứng dụng để gg không chặn request
+app.use(express.json());
 app.use(cors());
+app.use("/api/users", userRoute);
+app.use("/auth", otpRoute);
+//CRUD 
 
-// Chuyển đổi dữ liệu sang json và ngược lại
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.get("/", (req, res) => {
+  res.send("Welcome our chat app APIs...");
+});
 
-app.use(router);
+const port = process.env.PORT || 3000;
+const uri = process.env.MONGO_URL;
 
-// Khởi chạy app
-mongoose.connect(mongodb_connect_string)
-.then(() =>
-app.listen(port, () =>
-  console.log("> Server is up and running on port : http://localhost:" + port),
-))
-.catch(err =>
-    console.log(err))
+app.listen(port, (req, res) => {
+  console.log(`Server running on port: ${port}`);
+});
+
+mongoose
+  .connect(uri, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("MongoDB connection established"))
+  .catch((error) => console.log("MongoDB connection failed: ", error.message));

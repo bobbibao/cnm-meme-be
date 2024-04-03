@@ -1,87 +1,153 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const express = require('express');
-const bodyParser = require('body-parser');
-const ApiCode = require("../utils/apicode");
-const apiCode = new ApiCode();
-
-const secretKey = 'cmn_meme_zalo_137167';
-
-const app = express();
-app.use(bodyParser.json());
-
-const generateToken = (user) => {
-  return jwt.sign({ id: user.id, username: user.username }, secretKey, { expiresIn: '1h' });
+const userModel = require("../models/userModels");
+const OTP = require("../models/otpModel");
+const bcrypt = require("bcrypt");
+const validator = require("validator");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
+const createToken = (_id) => {
+  const jwtkey = process.env.JWT_SECRET_KEY;
+  return jwt.sign({ _id }, jwtkey, { expiresIn: "3d" });
 };
 
-const loginController = (req, res) => {
-  const { email, password } = req.body;
-  console.log(email, password);
-  User.find()
-  .then((users) => {
-      const user = users.find(u => u.email === email && u.password === password);
-      console.log(user);
-      if (!user) {
-        return res.status(401).json({ message: 'Invalid credentials' });
-      }
-      const token = generateToken(user);
-      res.cookie('jwt', token, { httpOnly: true }); // save token in a httpOnly cookie
-      res.json({ message: 'Login successful', token, redirectTo: '/chat' }); // send response to FE
-    })
-    .catch((err) => {
-      return res.json(apiCode.error(err, "List All users Fail"));
-    });
-}
-
-const getUserById = (req, res) => {
-  const id = req.query.id;
-  User.findById(id)
-    .then((user) => {
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-      res.json(user);
-    })
-    .catch((err) => {
-      res.status(500).json({ message: 'Internal server error' });
-    });
-}
-
-
-const updateUser = async (req, res) => {
+// Bắt lỗi khi đăng ký người dùng
+const registerUser = async (req, res) => {
   try {
-    const userId = req.user.id; // Extract user ID from JWT payload
-    const { displayName, dateOfBirth, phoneNumber } = req.body; // Extract updated profile fields
-    console.log(userId, displayName, dateOfBirth, phoneNumber);
-    // Update user profile in the database
-    const updatedUser = await User.findByIdAndUpdate(userId, {
+    const {
+      registerData,
+      otp,
+    } = req.body;
+    const {
+      username,
+      password,
+      email,
+      phoneNumber,
       displayName,
+      gender,
       dateOfBirth,
-      phoneNumber
-    }, { new: true });
+    } = registerData;
 
-    if (!updatedUser) {
-      return res.status(404).json({ message: 'User not found' });
+    console.log(req.body)
+    // Kiểm tra xem phone number đã tồn tại chưa
+    let user = await userModel.findOne({ phoneNumber });
+    if (user)
+      return res
+        .status(400)
+        .json("User with the given phone number already exists...");
+
+    // Kiểm tra xem số điện thoại có hợp lệ không
+    if (!validator.isMobilePhone(phoneNumber, "any", { strictMode: false })) {
+      return res.status(400).json("Invalid phone number format...");
     }
 
-    // Send back the updated user profile
-    res.json(updatedUser);
+    // Kiểm tra xem các trường thông tin có được cung cấp không
+    if (
+      !username ||
+      !password ||
+      !email ||
+      !phoneNumber ||
+      !displayName ||
+      !gender ||
+      !dateOfBirth
+    )
+      return res.status(400).json("All fields are required...");
+
+    // Kiểm tra định dạng của email
+    if (!validator.isEmail(email))
+      return res.status(400).json("Email must be a valid email...");
+
+    // Kiểm tra mật khẩu có đủ mạnh không
+    if (!validator.isStrongPassword(password))
+      return res.status(400).json("Password must be strong...");
+
+    //Find the most recent OTP for the email
+    const response = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
+    if (response.length === 0 || otp !== response[0].otp) {
+      return res.status(400).json({
+        success: false,
+        message: "The OTP is not valid",
+      });
+    }
+
+    // Tạo một user mới và lưu vào cơ sở dữ liệu
+    user = new userModel({
+      username,
+      password,
+      email,
+      phoneNumber,
+      displayName,
+      gender,
+      dateOfBirth,
+    });
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(user.password, salt);
+    await user.save();
+
+    // Tạo token và gửi lại cho client
+    const token = createToken(user._id);
+    res.status(200).json({
+      _id: user._id,
+      username,
+      password,
+      email,
+      phoneNumber,
+      displayName,
+      gender,
+      dateOfBirth,
+      token,
+    });
   } catch (error) {
-    console.error('Error updating user profile:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.log(error);
+    res.status(500).json(error);
   }
 };
 
-const getProfile = async (req, res) => {
-  const user = await User.findById(req.user.id); 
-  const data = {
-    name: user.displayName,
-    email: user.email,
-    gender: user.gender,
-    dob: user.dateOfBirth.toISOString().split('T')[0].split('-').reverse().join('-'),
-    phone: user.phoneNumber
-  };
-  console.log(data);
-  return res.json(apiCode.success(data, "Get Profile Success"));
-}
-module.exports = {loginController, getUserById, updateUser, getProfile};
+// Hàm đăng nhập người dùng
+const loginUser = async (req, res) => {
+  const { email, password } = req.body;
+  console.log(email);
+  try {
+    // Tìm kiếm người dùng theo email
+    let user = await userModel.findOne({ email });
+    if (!user) return res.status(400).json("Invalid email or password...");
+
+    // So sánh mật khẩu đã hash với mật khẩu nhập vào
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword)
+      return res.status(400).json("Invalid email or password...");
+
+    // Nếu mọi thứ hợp lệ, tạo token và gửi lại cho client
+    const tokens = createToken(user._id);
+    res.status(200).json({ _id: user._id, username: user.name, email, tokens });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json(error);
+  }
+};
+
+// Hàm forgot password
+const forgotPassword = async (req, res) => {
+  
+};
+
+const findUser = async (req, res) => {
+  const userId = req.params.userId;
+  try {
+    const user = await userModel.findById(userId);
+    res.status(200).json(user);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json(error);
+  }
+};
+
+const getUser = async (req, res) => {
+  try {
+    const users = await userModel.find();
+    res.status(200).json(users);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json(error);
+  }
+};
+
+module.exports = { registerUser, loginUser, findUser, getUser };
