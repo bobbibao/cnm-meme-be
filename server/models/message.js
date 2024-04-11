@@ -42,9 +42,13 @@ const MessageSchema = new Schema({
         default: Date.now
     },
     reactions: [{
-        type: Schema.Types.Mixed
+        userId: Types.ObjectId,
+        reaction: {
+            type: String,
+            default: ''
+        }
     }],
-    media: {
+    media:  {
         name: {
             type: String,
             default: ''
@@ -64,7 +68,14 @@ const MessageSchema = new Schema({
     },
     readUsers: [{
         type: Schema.Types.Mixed
-    }]
+    }],
+    isForwarded: {
+        type: Boolean,
+        default: false
+    },
+    hidedUsers: [{
+        type: Schema.Types.Mixed
+    }],
 });
 
 module.exports = Mongoose.model('Message', MessageSchema, 'messages');

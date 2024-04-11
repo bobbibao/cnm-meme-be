@@ -1,8 +1,6 @@
 const Mongoose = require('mongoose');
 const { Schema, Types } = Mongoose;
 
-//direct.js: _id, chatRoomId, receiverId, isOnline, lastActiveTime, isArchived, isDeleted, isMuted, isPinned, hasUnreadMessage, numberOfUnreadMessage
-
 const DirectSchema = new Schema({
     chatRoomId: {
         type: Types.ObjectId,

@@ -1,75 +1,43 @@
-// controllers/otpController.js
-const otpGenerator = require("otp-generator");
-const OTP = require("../models/otpModel");
-const User = require("../models/user");
-exports.sendOTP = async (req, res) => {
+// models/otpModel.js
+const mongoose = require("mongoose");
+const mailSender = require("../utils/mailSender");
+
+const otpSchema = new mongoose.Schema({
+  email: {
+    type: String,
+    required: true,
+  },
+  otp: {
+    type: String,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    expires: 60 * 5, // The document will be automatically deleted after 5 minutes of its creation time
+  },
+});
+// Define a function to send emails
+async function sendVerificationEmail(email, otp) {
   try {
-    const { email } = req.body;
-
-    // Kiểm tra xem email có được cung cấp không
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Email rỗng",
-      });
-    }
-
-    const checkUserPresent = await User.findOne({ email });
-    if (checkUserPresent) {
-      return res.status(401).json({
-        success: false,
-        message: "Người dùng đã được đăng ký",
-      });
-    }
-    let otp = otpGenerator.generate(6, {
-      upperCaseAlphabets: false,
-      lowerCaseAlphabets: false,
-      specialChars: false,
-    });
-    let result = await OTP.findOne({ otp: otp });
-    while (result) {
-      otp = otpGenerator.generate(6, {
-        upperCaseAlphabets: false,
-      });
-      result = await OTP.findOne({ otp: otp });
-    }
-    const otpPayload = { email, otp };
-    const otpBody = await OTP.create(otpPayload);
-    res.status(200).json({
-      success: true,
-      message: "OTP đã được gửi thành công",
-      otp,
-    });
+    const mailResponse = await mailSender(
+      email,
+      "Verification Email",
+      `<h1>Please confirm your OTP</h1>
+       <p>Here is your OTP code: ${otp}</p>`
+    );
+    console.log("Email sent successfully: ", mailResponse);
   } catch (error) {
-    console.log(error.message);
-    return res.status(500).json({ success: false, error: error.message });
+    console.log("Error occurred while sending email: ", error);
+    throw error;
   }
-};
-
-exports.verifyOTP = async (req, res) => {
-  try {
-    const { email, otp } = req.body;
-    // Kiểm tra xem trường email và otp có rỗng không
-    if (!email || !otp) {
-      return res.status(400).json({
-        success: false,
-        message: "Email và OTP không được để trống",
-      });
-    }
-    //Find the most recent OTP for the email
-    const response = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
-    if (response.length === 0 || otp !== response[0].otp) {
-      return res.status(400).json({
-        success: false,
-        message: "The OTP is not valid",
-      });
-    }
-    res.status(200).json({
-      success: true,
-      message: "OTP verified successfully",
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json(error);
+}
+otpSchema.pre("save", async function (next) {
+  console.log("New document saved to the database");
+  // Only send an email when a new document is created
+  if (this.isNew) {
+    await sendVerificationEmail(this.email, this.otp);
   }
-};
+  next();
+});
+module.exports = mongoose.model("OTP", otpSchema);
