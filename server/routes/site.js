@@ -7,7 +7,7 @@ const {
     sendMessage,
     unsendMessage } = require("../controllers/messageController");
 
-const {registerUser, loginUser, resetPassword, forgotPassword } = require('../controllers/userController');
+const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getProfile, updateAvatar} = require('../controllers/userController');
 const otpController = require("../controllers/otpController");
 
 const { 
@@ -32,4 +32,7 @@ router.post("/users/forgot-password", forgotPassword);
 router.post("/users/reset-password/:id/:token", resetPassword);
 router.post("/users/verify", otpController.verifyOTP);
 
+router.get("/profile", authenticateJWT, getProfile);
+router.post("/profile", authenticateJWT, updateUser);
+router.post("/profile/avatar", authenticateJWT, updateAvatar);
 module.exports = router;
