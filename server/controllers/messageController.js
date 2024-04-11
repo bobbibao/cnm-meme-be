@@ -65,6 +65,23 @@ const getMessages = async (req, res) => {
   }
 };
 
+const searchMessages = async (req, res) => {
+  const chatRoomId = req.params.chatRoomId;
+  const keyword = req.query._q;
+  const chatRoom = await ChatRoom.findById(chatRoomId);
+  const messages = await Message.find({ _id: { $in: chatRoom.messages }, content: { $regex: keyword, $options: 'i' } });
+  const messageList = messages.map(message => {
+    return {
+      index: messages.indexOf(message),
+      id: message._id,
+      content: message.content,
+      sent: req.user.id === message.senderID.toString(),
+      time: message.createAt.getHours() + ':' + (message.createAt.getMinutes() < 10 ? '0' + message.createAt.getMinutes() : message.createAt.getMinutes())
+    }
+  });
+  return res.status(200).json(apiCode.success(messageList, 'Search Messages Success'));
+};
+
 const sendMessage = async (req, res) => {
   const { chatRoomId, content } = req.body.data;
   const ChatRoom = require('../models/chatRoom');
@@ -82,22 +99,58 @@ const sendMessage = async (req, res) => {
   await chatRoom.save();
   return res.status(200).json(apiCode.success(message, 'Send Message Success'));
 };
-const searchMessages = async (req, res) => {
-  const chatRoomId = req.params.chatRoomId;
-  const keyword = req.query._q;
-  const chatRoom = await ChatRoom.findById(chatRoomId);
-  const messages = await Message.find({ _id: { $in: chatRoom.messages }, content: { $regex: keyword, $options: 'i' } });
-  const messageList = messages.map(message => {
-    return {
-      index: messages.indexOf(message),
-      id: message._id,
-      content: message.content,
-      sent: req.user.id === message.senderID.toString(),
-      time: message.createAt.getHours() + ':' + (message.createAt.getMinutes() < 10 ? '0' + message.createAt.getMinutes() : message.createAt.getMinutes())
+const sendMedia = async (req, res) => {
+  const media  = req.files;
+  const { chatRoomId, content } = req.body;
+  const uploadPromises = media.map(async file => {
+    const filePath = `${Date.now().toString()}.${file.size}.${file?.originalname}`;
+    const uploadParams = {
+        Bucket: S3_BUCKET_NAME,
+        Key: filePath,
+        Body: file.buffer, // Assuming multer is configured to store file buffer
+        ACL: 'public-read',
+        ContentType: file.mimetype,
+    };
+    try {
+        const s3Data = await s3.upload(uploadParams).promise();
+        return {
+            // senderID: req.user.id,
+            type: file.mimetype.includes('image') ? 'image' : file.mimetype.includes('video') ? 'video' : 'file',
+            media: {
+                name: file?.originalname,
+                type: file.mimetype,
+                size: file.size,
+                url: s3Data.Location
+            }
+        };
+    } catch (error) {
+        console.error('Error uploading file to S3:', error);
+        throw error; // Propagate the error to the caller
     }
   });
-  return res.status(200).json(apiCode.success(messageList, 'Search Messages Success'));
-};
+  try {
+      const uploadedMessages = await Promise.all(uploadPromises);
+      const newMessages = uploadedMessages.map((media, index) => {
+          return new Message({
+              senderID: req.user.id,
+              content: index === uploadedMessages.length - 1 ? content : '',
+              type: media.type,
+              media: media.media
+          });
+      });
+      console.log("newMessages", newMessages)
+      const messages = await Message.insertMany(newMessages);
+      const chatRoom = await ChatRoom.findById(chatRoomId);
+      chatRoom.messages.push(...messages.map(message => message._id));
+      chatRoom.lastMessage = messages[messages.length - 1]._id;
+      await chatRoom.save();
+      return res.status(200).json(apiCode.success(messages, 'Send Media Success'));
+  } catch (error) {
+      console.error('Error uploading one or more files to S3:', error);
+      return res.status(500).json(apiCode.error('Error uploading files to S3'));
+  }
+}
+
 const unsentMessage = async (req, res) => {
   const id = req.params.id;
   try {
@@ -121,6 +174,7 @@ module.exports = {
   getMessages,
   searchMessages,
   sendMessage,
+  sendMedia,
   unsentMessage,
 
 }
