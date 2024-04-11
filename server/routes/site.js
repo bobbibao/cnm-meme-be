@@ -7,7 +7,10 @@ const {
     sendMessage,
     unsendMessage } = require("../controllers/messageController");
 
-const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getProfile, updateAvatar} = require('../controllers/userController');
+const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getProfile, updateAvatar,
+        searchUser, addFriend, acceptFriend, getAllFriendRequest} 
+= require('../controllers/userController');
+
 const otpController = require("../controllers/otpController");
 
 const { 
@@ -35,4 +38,9 @@ router.post("/users/verify", otpController.verifyOTP);
 router.get("/profile", authenticateJWT, getProfile);
 router.post("/profile", authenticateJWT, updateUser);
 router.post("/profile/avatar", authenticateJWT, updateAvatar);
+router.post('/add-friend', authenticateJWT, addFriend);
+router.post('/accept-friend', authenticateJWT, acceptFriend);
+router.get("/getAllFriendRequest", authenticateJWT, getAllFriendRequest);
+router.post('/search-user', authenticateJWT, searchUser);
+
 module.exports = router;
