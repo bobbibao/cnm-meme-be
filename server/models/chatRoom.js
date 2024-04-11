@@ -30,5 +30,4 @@ const chatRoomSchema = new Schema({
     ]
 });
 
-
 module.exports = Mongoose.model('ChatRoom', chatRoomSchema, 'chatRooms');

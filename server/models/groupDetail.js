@@ -1,5 +1,3 @@
-//groupDetails: isPinned, isMuted, isDeleted, isArchived, numberOfUnreadMessage, hasUnreadMessage:
-
 const Mongoose = require('mongoose');
 const { Schema, Types } = Mongoose;
 

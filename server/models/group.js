@@ -1,6 +1,5 @@
 const Mongoose = require('mongoose');
 const { Schema, Types } = Mongoose;
-// groups: name, photoURL, ownerId, chatRoomId, members (userId, addByUserId, roles [], addAt):
 
 const GroupSchema = new Schema({
   name: {

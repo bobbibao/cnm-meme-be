@@ -6,7 +6,24 @@ const User = require('../models/user');
 const bcrypt = require("bcrypt");
 const validator = require("validator");
 const nodemailer = require("nodemailer");
+const Joi = require('joi');
 
+const app = express();
+app.use(bodyParser.json());
+
+const apiCode = new ApiCode();
+
+const multer = require('multer');
+require('dotenv').config();
+const AWS = require('aws-sdk');
+const { S3_BUCKET_NAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION } = process.env;
+const s3 = new AWS.S3({
+  accessKeyId: AWS_ACCESS_KEY_ID,
+  secretAccessKey: AWS_SECRET_ACCESS_KEY,
+  region: AWS_REGION
+});
+
+//user management
 const registerUser = async (req, res) => {
   try {
     // Retrieve the email from session
@@ -67,7 +84,7 @@ const registerUser = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-// Hàm đăng nhập người dùng
+
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
   console.log(email, password);
@@ -118,7 +135,6 @@ const resetPassword = async (req, res) => {
   });
 };
 
-// Hàm forgot password
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
 
@@ -165,9 +181,143 @@ const forgotPassword = async (req, res) => {
   });
 };
 
+//Profile management
+const getProfile = async (req, res) => {
+  const user = await User.findById(req.user.id); 
+  const data = {
+    name: user.displayName,
+    email: user.email,
+    gender: user.gender,
+    dob: user.dateOfBirth.toISOString().split('T')[0].split('-').reverse().join('-'),
+    phone: user.phoneNumber,
+    avatar: user.photoURL
+  };
+  return res.json(apiCode.success(data, "Get Profile Success"));
+};
+const catchAsync = (fn) => {
+  return (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+};
+const filterObj = (obj, ...allowedFields) => {
+  const filtered = {};
+  Object.keys(obj).forEach((key) => {
+    if (allowedFields.includes(key)) {
+      filtered[key] = obj[key];
+    }
+  });
+  return filtered;
+};
+
+// Define a schema for user data validation
+const userSchema = Joi.object({
+  displayName: Joi.string().required(),
+  dateOfBirth: Joi.date().iso().required(),
+  phoneNumber: Joi.string().pattern(/^(08|09|05|03|07)[0-9]{8}$/).required(), // Validate for 10-digit phone number
+});
+
+const updateUser = catchAsync(async (req, res, next) => {
+  const {displayName, dateOfBirth, phoneNumber} = {displayName: req.body.name, dateOfBirth: req.body.dob.split("-").reverse().join("-"), phoneNumber: req.body.phone};
+  console.log({displayName, dateOfBirth, phoneNumber});
+  try {
+    const { error, value } = userSchema.validate({displayName, dateOfBirth, phoneNumber});
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+    // Check if the provided values differ from the old values
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (displayName == user.displayName && dateOfBirth == user.dateOfBirth.toISOString() && phoneNumber == user.phoneNumber) {
+      return res.status(400).json({ message: 'No changes detected' });
+    }
+
+    // Check if the phone number and date of birth already exist in the database for other users
+    const existingPhoneUser = await User.findOne({ phoneNumber });
+    if (existingPhoneUser && existingPhoneUser._id.toString() !== req.user.id) {
+      console.log("Phone number already exists");
+      return res.status(400).json({ message: 'Phone number already exists' });
+    }
+
+    // If the phone number and date of birth are not being updated, proceed with updating the user
+    const filteredBody = filterObj(value, "displayName", "dateOfBirth", "phoneNumber");
+
+    const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
+      new: true,
+      runValidators: true
+    });
+
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+const storage = multer.memoryStorage({
+  destination(req, file, callback) {
+      callback(null, "");
+  }
+});
+const path = require("path");
+const upload = multer({
+  storage,
+  limits: { fileSize: 2000000 },
+  fileFilter(req, file, cb) {
+      checkFileType(file, cb);
+  },
+}).single('avatar');
+function checkFileType(file, cb) {
+  const fileTypes = /jpeg|jpg|png|gif/;
+
+  const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = fileTypes.test(file.mimetype);
+  if (extname && mimetype) {
+      return cb(null, true);
+  }
+  return cb("Error: Pls upload images /jpeg|jpg|png|gif/ only!");
+}
+const updateAvatar = async (req, res) => {
+  upload(req, res, async (err) => {
+      if (err) {
+          console.log('Error uploading image:', err);
+          return res.status(500).json({ message: 'Failed to upload image' });
+      }
+      const id = req.user.id;
+      const file = req.file; 
+      if (!file) {
+          return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const filePath = `${Date.now().toString()}-${file.originalname}`;
+      const params = {
+          Bucket: process.env.S3_BUCKET_NAME,
+          Key: filePath,
+          Body: file.buffer,
+          ACL: 'public-read',
+          ContentType: file.mimetype
+      };
+
+      s3.upload(params, async (err, data) => {
+          if (err) {
+              console.log('Error uploading image:', err);
+              return res.status(500).json({ message: 'Failed to upload image' });
+          }
+          console.log('Image uploaded successfully:', data.Location);
+          const user = await User.findByIdAndUpdate(id, { photoURL: data.Location }, { new: true });
+          console.log(user);
+          res.status(200).json({ data: user });
+      });
+  });
+};
+
 module.exports = {
   registerUser,
   loginUser,
   forgotPassword,
   resetPassword,
+  getProfile,
+  updateUser,
+  updateAvatar
 };

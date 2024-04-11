@@ -1,6 +1,3 @@
-// pagination.js
-
-
 function paginate(data, page, itemsPerPage) {
   const offset = (page - 1) * itemsPerPage;
 
