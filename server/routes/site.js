@@ -8,7 +8,7 @@ const {
     unsendMessage } = require("../controllers/messageController");
 
 const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getProfile, updateAvatar,
-        searchUser, addFriend, acceptFriend, getAllFriendRequest} 
+        searchUser, addFriend, acceptFriend, getAllFriendRequest, getUserProfile, getUserByChatRoomId, getUser} 
 = require('../controllers/userController');
 
 const otpController = require("../controllers/otpController");
@@ -28,6 +28,7 @@ router.patch("/direct/:direct/unsend-message/:messageId, ", authenticateJWT, uns
 router.get("/list-direct", authenticateJWT, listDirect);
 
 //user management and authentication
+router.get('/user/:id', authenticateJWT, getUser);
 router.post("/users/register", registerUser);
 router.post("/login", loginUser);
 router.post("/users/send-otp", otpController.sendOTP);
@@ -37,10 +38,15 @@ router.post("/users/verify", otpController.verifyOTP);
 
 router.get("/profile", authenticateJWT, getProfile);
 router.post("/profile", authenticateJWT, updateUser);
+router.get("/profile/:username", authenticateJWT, getUserProfile);
 router.post("/profile/avatar", authenticateJWT, updateAvatar);
 router.post('/add-friend', authenticateJWT, addFriend);
 router.post('/accept-friend', authenticateJWT, acceptFriend);
 router.get("/getAllFriendRequest", authenticateJWT, getAllFriendRequest);
 router.post('/search-user', authenticateJWT, searchUser);
+
+
+
+router.get('/info-user/:chatRoomId', authenticateJWT, getUserByChatRoomId);
 
 module.exports = router;
