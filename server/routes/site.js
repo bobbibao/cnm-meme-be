@@ -25,6 +25,9 @@ router.get('/direct/:id', authenticateJWT, getDirect);
 router.get('/directs/', authenticateJWT, getDirects);
 router.get('/info-chat-item/', authenticateJWT, getInfoChatItem);
 
+router.get('/chatRoom/:id', authenticateJWT, getChatRoom);
+router.get('/chat-room/:directId', authenticateJWT, getChatRoomByDirectId);
+
 router.get("/list-message", listMessage);
 router.post("/direct/:direct/send-message", authenticateJWT, sendMessage);
 router.get("/direct/:direct/get-messages", authenticateJWT, getMessages);
