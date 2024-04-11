@@ -1,137 +1,141 @@
-const userModel = require("../models/userModels");
-const OTP = require("../models/otpModel");
+const jwt = require('jsonwebtoken');
+const express = require('express');
+const bodyParser = require('body-parser');
+const ApiCode = require("../utils/apicode");
+const User = require('../models/user');
 const bcrypt = require("bcrypt");
 const validator = require("validator");
-const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer"); 
-require("dotenv").config();
-const createToken = (_id) => {
-  const jwtkey = process.env.JWT_SECRET_KEY;
-  return jwt.sign({ _id }, jwtkey, { expiresIn: "3d" });
-};
+const nodemailer = require("nodemailer");
 
-// Bắt lỗi khi đăng ký người dùng
 const registerUser = async (req, res) => {
   try {
-    const {
-      registerData,
-      otp,
-    } = req.body;
-    const {
-      username,
-      password,
-      email,
-      phoneNumber,
-      displayName,
-      gender,
-      dateOfBirth,
-    } = registerData;
-
-    console.log(req.body)
-    // Kiểm tra xem phone number đã tồn tại chưa
-    let user = await userModel.findOne({ phoneNumber });
-    if (user)
+    // Retrieve the email from session
+    const { password, email, displayName, dateOfBirth } = req.body;
+    // Kiểm tra xem các trường thông tin có được cung cấp không
+    if (!password || !displayName || !dateOfBirth)
       return res
         .status(400)
-        .json("User with the given phone number already exists...");
-
-    // Kiểm tra xem số điện thoại có hợp lệ không
-    if (!validator.isMobilePhone(phoneNumber, "any", { strictMode: false })) {
-      return res.status(400).json("Invalid phone number format...");
-    }
-
-    // Kiểm tra xem các trường thông tin có được cung cấp không
-    if (
-      !username ||
-      !password ||
-      !email ||
-      !phoneNumber ||
-      !displayName ||
-      !gender ||
-      !dateOfBirth
-    )
-      return res.status(400).json("All fields are required...");
-
+        .json({ success: false, message: "Tất cả các trường là bắt buộc..." });
     // Kiểm tra định dạng của email
     if (!validator.isEmail(email))
-      return res.status(400).json("Email must be a valid email...");
-
+      return res
+        .status(400)
+        .json({ success: false, message: "Email phải là email hợp lệ..." });
     // Kiểm tra mật khẩu có đủ mạnh không
     if (!validator.isStrongPassword(password))
-      return res.status(400).json("Password must be strong...");
-
-    //Find the most recent OTP for the email
-    const response = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
-    if (response.length === 0 || otp !== response[0].otp) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Mật khẩu phải mạnh..." });
+    // Kiểm tra ngày sinh nhật có đủ 15 tuổi không
+    const birthDate = new Date(dateOfBirth);
+    const currentDate = new Date();
+    const age = currentDate.getFullYear() - birthDate.getFullYear();
+    if (
+      age < 15 ||
+      (age === 15 &&
+        (currentDate.getMonth() < birthDate.getMonth() ||
+          (currentDate.getMonth() === birthDate.getMonth() &&
+            currentDate.getDate() < birthDate.getDate())))
+    ) {
       return res.status(400).json({
         success: false,
-        message: "The OTP is not valid",
+        message: "Bạn phải ít nhất 15 tuổi mới được đăng ký...",
       });
     }
-
     // Tạo một user mới và lưu vào cơ sở dữ liệu
-    user = new userModel({
-      username,
+    user = new User({
       password,
       email,
-      phoneNumber,
       displayName,
-      gender,
       dateOfBirth,
     });
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(user.password, salt);
     await user.save();
-
     // Tạo token và gửi lại cho client
-    const token = createToken(user._id);
+    const token = createToken(user);
     res.status(200).json({
       _id: user._id,
-      username,
       password,
       email,
-      phoneNumber,
       displayName,
-      gender,
       dateOfBirth,
       token,
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json(error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
-
 // Hàm đăng nhập người dùng
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
   console.log(email, password);
   try {
     // Tìm kiếm người dùng theo email
-    let user = await userModel.findOne({ email });
-    if (!user) return res.status(400).json("User not found");
+    let user = await User.findOne({ email });
+    if (!user) return res.status(400).json("Không tìm thấy người dùng");
 
     // So sánh mật khẩu đã hash với mật khẩu nhập vào
+    console.log(password, user.password)
     const isValidPassword = await bcrypt.compare(password, user.password);
     console.log(password, user.password, isValidPassword);
     if (!isValidPassword)
-      return res.status(400).json("Invalid email or password...");
+      return res.status(400).json("Email hoặc mật khẩu không hợp lệ...");
 
     // Nếu mọi thứ hợp lệ, tạo token và gửi lại cho client
-    const tokens = createToken(user._id);
-    res.status(200).json({ _id: user._id, username: user.name, email, tokens });
+    const token = createToken(user);
+    // const test = res.cookie('jwt', tokens, { httpOnly: true }); // save token in a httpOnly cookie
+    // console.log(test);
+    return res.status(200).json({ _id: user._id, email, token });
   } catch (error) {
     console.log(error);
-    res.status(500).json(error);
+    return res.status(500).json(error);
   }
+};
+
+const resetPassword = async (req, res) => {
+  const id = req.params["id"];
+  const token = req.params["token"];
+  const { password } = req.body;
+  const salt = await bcrypt.genSalt(10);
+
+
+  jwt.verify(token, "jwt_secret_key", (err, decoded) => {
+    if (err) {
+      return res.json({ Status: "Error with token" });
+    } else {
+      bcrypt
+        .hash(password, salt)
+        .then((hash) => {
+          User
+            .findByIdAndUpdate({ _id: id }, { password: hash })
+            .then((u) => res.send({ Status: "Success" }))
+            .catch((err) => res.send({ Status: err }));
+        })
+        .catch((err) => res.send({ Status: err }));
+    }
+  });
 };
 
 // Hàm forgot password
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
-  userModel.findOne({ email: email }).then((user) => {
+
+  // Kiểm tra xem email có được cung cấp không
+  if (!email) {
+    return res.status(400).send({ Status: "Email rỗng" });
+  }
+
+  // Kiểm tra cú pháp email
+  const emailRegex = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).send({ Status: "Sai định dạng email" });
+  }
+
+  User.findOne({ email: email }).then((user) => {
     if (!user) {
-      return res.send({ Status: "User not existed" });
+      return res.send({ Status: "Người dùng không tồn tại" });
     }
     const token = jwt.sign({ id: user._id }, "jwt_secret_key", {
       expiresIn: "1d",
@@ -143,12 +147,12 @@ const forgotPassword = async (req, res) => {
         pass: process.env.MAIL_PASS,
       },
     });
-
+    console.log(process.env.URL2); 
     var mailOptions = {
       from: process.env.MAIL_USER,
       to: email,
-      subject: 'Reset Password Link',
-      text: `http://localhost:3001/reset-password/${user._id}/${token}`,
+      subject: "Reset Password Link",
+      text: process.env.URL2 + `/reset-password/${user._id}/${token}`,
     };
 
     transporter.sendMail(mailOptions, function (error, info) {
@@ -161,55 +165,9 @@ const forgotPassword = async (req, res) => {
   });
 };
 
-//ResetPassword
-const resetPassword = async(req, res) => {
-  const id = req.params['id']
-  const token = req.params['token'];
-  const { password } = req.body;
-  const salt = await bcrypt.genSalt(10);
-
-  jwt.verify(token, "jwt_secret_key", (err, decoded) => {
-    if (err) {
-      return res.json({ Status: "Error with token" });
-    } else {
-      bcrypt
-        .hash(password, salt)
-        .then((hash) => {
-          userModel.findByIdAndUpdate({ _id: id }, { password: hash })
-            .then((u) => res.send({ Status: "Success" }))
-            .catch((err) => res.send({ Status: err }));
-        })
-        .catch((err) => res.send({ Status: err }));
-    }
-  });
-}
-
-const findUser = async (req, res) => {
-  const userId = req.params.userId;
-  try {
-    const user = await userModel.findById(userId);
-    res.status(200).json(user);
-  } catch (error) {
-    console.log(error);
-    res.status(500).json(error);
-  }
-};
-
-const getUser = async (req, res) => {
-  try {
-    const users = await userModel.find();
-    res.status(200).json(users);
-  } catch (error) {
-    console.log(error);
-    res.status(500).json(error);
-  }
-};
-
 module.exports = {
   registerUser,
   loginUser,
-  findUser,
-  getUser,
   forgotPassword,
   resetPassword,
 };
