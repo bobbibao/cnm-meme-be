@@ -10,6 +10,7 @@ const Direct = require('../models/Direct');
 const ChatRoom = require('../models/chatRoom');
 const nodemailer = require("nodemailer");
 const {getGroupIdsByUserId} = require('./groupController');
+const Joi = require('joi');
 
 const app = express();
 app.use(bodyParser.json());

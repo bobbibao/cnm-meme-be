@@ -15,9 +15,7 @@ const { getChatRoom, getChatRoomByDirectId } = require('../controllers/chatRoomC
 const { getGroup, getGroups, getGroupByGroupDetailId, getInfoGroupItem } = require('../controllers/groupController');
 
 const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getProfile, updateAvatar,
-    searchUser, addFriend, acceptFriend, getAllFriendRequest, getUserProfile, getUserByChatRoomId, getUser} 
-        = require('../controllers/userController');
-
+    searchUser, addFriend, acceptFriend, getAllFriendRequest, getUserProfile, getUserByChatRoomId, getUser}  = require('../controllers/userController');
 
 const { getMessage, getMessages, searchMessages, unsentMessage, sendMessage, sendMedia, reactMessage,
     forwardMessage, hideMessage, deleteMessage } = require('../controllers/messageController');
