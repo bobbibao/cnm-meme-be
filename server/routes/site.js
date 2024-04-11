@@ -7,15 +7,13 @@ const {
     sendMessage,
     unsendMessage } = require("../controllers/messageController");
 
-const { 
-    loginController, 
-    getUserById,
-    updateUser,
-    getProfile } = require("../controllers/userController");
+const {registerUser, loginUser, resetPassword, forgotPassword } = require('../controllers/userController');
+const otpController = require("../controllers/otpController");
 
 const { 
     listDirect, 
     getMessages } = require("../controllers/directController");
+
 
 
 router.get("/list-message", listMessage);
@@ -24,10 +22,14 @@ router.get("/direct/:direct/get-messages", authenticateJWT, getMessages);
 router.patch("/direct/:direct/unsend-message/:messageId, ", authenticateJWT, unsendMessage);
 // router.get("/direct/:direct/search-messages, ", authenticateJWT, searchMessages);
 
-router.post("/login", loginController);
 router.get("/list-direct", authenticateJWT, listDirect);
-router.get("/get-user-by-id", authenticateJWT, getUserById);
-router.get("/profile", authenticateJWT, getProfile);
-router.patch("/profile", authenticateJWT, updateUser);
+
+//user management and authentication
+router.post("/users/register", registerUser);
+router.post("/login", loginUser);
+router.post("/users/send-otp", otpController.sendOTP);
+router.post("/users/forgot-password", forgotPassword);
+router.post("/users/reset-password/:id/:token", resetPassword);
+router.post("/users/verify", otpController.verifyOTP);
 
 module.exports = router;
