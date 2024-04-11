@@ -27,7 +27,12 @@ const s3 = new AWS.S3({
   region: AWS_REGION
 });
 
+
 //user management
+const createToken = (user) => {
+  const jwtkey = process.env.JWT_SECRET_KEY;
+  return jwt.sign({ id: user.id, username: user.username }, jwtkey, { expiresIn: "3d" });
+};
 const registerUser = async (req, res) => {
   try {
     // Retrieve the email from session
