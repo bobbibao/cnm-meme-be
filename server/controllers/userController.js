@@ -2,11 +2,14 @@ const jwt = require('jsonwebtoken');
 const express = require('express');
 const bodyParser = require('body-parser');
 const ApiCode = require("../utils/apicode");
+const mongoose = require('mongoose');
 const User = require('../models/user');
 const bcrypt = require("bcrypt");
 const validator = require("validator");
+const Direct = require('../models/Direct');
+const ChatRoom = require('../models/chatRoom');
 const nodemailer = require("nodemailer");
-const Joi = require('joi');
+const {getGroupIdsByUserId} = require('./groupController');
 
 const app = express();
 app.use(bodyParser.json());
@@ -84,7 +87,6 @@ const registerUser = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
   console.log(email, password);
@@ -110,7 +112,6 @@ const loginUser = async (req, res) => {
     return res.status(500).json(error);
   }
 };
-
 const resetPassword = async (req, res) => {
   const id = req.params["id"];
   const token = req.params["token"];
@@ -134,7 +135,6 @@ const resetPassword = async (req, res) => {
     }
   });
 };
-
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
 
@@ -180,6 +180,23 @@ const forgotPassword = async (req, res) => {
     });
   });
 };
+
+const getUser = async (req, res) => {
+  const id = req.params.id;
+  try {
+    const objectId = new mongoose.Types.ObjectId(id);
+    const user = await User.findById(objectId);
+    user.friends() [{},{}]
+    if (!user) {
+      // return res.status(404).json({ message: 'User not found' });
+    }
+    console.log(user);
+    return res.json(user);
+  } catch (err) {
+    console.error(err);
+    // return res.status(500).json({ message: 'Server error' });
+  }
+}
 
 //Profile management
 const getProfile = async (req, res) => {
@@ -312,6 +329,171 @@ const updateAvatar = async (req, res) => {
   });
 };
 
+//friend management
+const searchUser = async (req, res) => {
+  const phone = req.body.searchTerm;
+  try {
+    const user = await User.findOne({ phoneNumber: phone, _id: { $ne: req.user.id }});
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const data = {
+      _id: user._id,
+      name: user.displayName,
+      email: user.email,
+      gender: user.gender,
+      dob: user.dateOfBirth.toISOString().split('T')[0].split('-').reverse().join('-'),
+      phone: user.phoneNumber,
+      avatar: user.photoURL,
+      isFriend: user.friends.includes(req.user.id),
+      sent: user.friendsRequest.includes(req.user.id)
+    }
+    console.log(data);
+    return res.status(200).json(apiCode.success(data, 'Search User Success'));
+  } catch (error) {
+    console.error('Error searching user:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+const addFriend = async (req, res) => {
+  const friendId = req.body.userInfo._id;
+  try {
+    const user = await User.findById(req.user.id);
+    const friend = await User.findById(friendId);
+    if (!friend) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (user.friends.includes(friendId)) {
+      return res.status(400).json({ message: 'User is already your friend' });
+    }
+    if(friend.friendsRequest.includes(user._id)){
+      return res.status(400).json({ message: 'Friend request already sent' });
+    }
+    friend.friendsRequest.push(user._id);
+    await friend.save();
+    res.status(200).json(apiCode.success({}, 'Add Friend Success'));
+  }catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+const acceptFriend = async (req, res) => {
+  const email = req.body.email;
+  try {
+    const user = await User.findById(req.user.id);
+    const friend = await User.findOne({ email });
+    const friendId = friend._id;
+    if (!friend) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (!user.friendsRequest.includes(friendId)) {
+      return res.status(400).json({ message: 'No friend request found' });
+    }
+    user.friendsRequest = user.friendsRequest.filter((id) => id.toString() !== friendId.toString());
+    user.friends.push(friendId);
+    friend.friends.push(user._id);
+    const chatRoom = new ChatRoom({
+    });
+    const direct = new Direct({
+      chatRoomId: chatRoom._id,
+      receiverId: friendId
+    });
+    const direct2 = new Direct({
+      chatRoomId: chatRoom._id,
+      receiverId: user._id
+    });
+    user.directs.push(direct);
+    friend.directs.push(direct2);
+    console.log(direct);
+    console.log(direct2);
+    await user.save();
+    await friend.save();
+    await chatRoom.save();
+    await direct.save();
+    await direct2.save();
+    res.status(200).json(apiCode.success({}, 'Accept Friend Success'));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+const getAllFriendRequest = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Người dùng không tồn tại." });
+    }
+    const friendRequests = await Promise.all(user.friendsRequest.map(async (friendId) => {
+      const friend = await User.findById(friendId);
+      return {
+        _id: friend._id,
+        name: friend.displayName,
+        email: friend.email,
+        phone: friend.phoneNumber,
+        avatar: friend.photoURL,
+        gender: friend.gender
+      }; 
+    }));
+    console.log(friendRequests);
+    return res.status(200).json(apiCode.success(friendRequests, "Lấy danh sách lời mời kết bạn thành công."));
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ message: "Đã xảy ra lỗi khi lấy danh sách yêu cầu kết bạn." });
+  }
+}
+
+const getUserByChatRoomId = async (req, res) => {
+  const chatRoomId = req.params.chatRoomId;
+  try {
+    const owner = await User.findById(req.user.id);
+    owner.directs.forEach(async (directId) => {
+      const direct = await Direct.findById(directId);
+      if (direct.chatRoomId.toString()  === chatRoomId) {
+        const user = await User.findById(direct.receiverId);
+        return res.json(apiCode.success(user, 'Get User Success'));
+      }
+    });
+  }
+  catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getUserProfile = async (req, res) => {
+  try {
+    const username = req.params.username;
+    const user = await User.findOne({ username }, 'displayName email gender photoURL thumbnailURL dateOfBirth phoneNumber groupDetails')
+    // .populate('groups
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const groupIds = await getGroupIdsByUserId(user._id);
+    const groupIds2 = await getGroupIdsByUserId(req.user.id);
+    a = groupIds2.map((value) => {
+      return value.toString();
+    });
+    console.log(a);
+    const countCommonGroup = groupIds.filter(value => a.includes(value.toString())).length;
+    const userProfile = {
+      _id: user._id,
+      name: user.displayName,
+      email:user.email,
+      gender: user.gender,
+      avatar: user.photoURL,
+      thumbnailURL: user.thumbnailURL,
+      dob: user.dateOfBirth.toISOString().split('T')[0].split('-').reverse().join('-'),
+      phone: user.phoneNumber,
+      countCommonGroup: countCommonGroup // Include group IDs
+    };
+
+    res.status(200).json(apiCode.success(userProfile, 'Get User Profile Success'));
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 module.exports = {
   registerUser,
   loginUser,
@@ -319,5 +501,12 @@ module.exports = {
   resetPassword,
   getProfile,
   updateUser,
-  updateAvatar
+  updateAvatar,
+  searchUser,
+  addFriend,
+  acceptFriend,
+  getAllFriendRequest,
+  getUserByChatRoomId, 
+  getUserProfile,
+  getUser
 };
