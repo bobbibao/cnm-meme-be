@@ -1,60 +1,102 @@
 const Direct = require('../models/Direct');
-const User = require('../models/User');
 const ApiCode = require("../utils/apicode");
 const apiCode = new ApiCode();
+const User = require('../models/user');
+const ChatRoom = require('../models/chatRoom');
+const Message = require('../models/message');
 
-const { getMessageById } = require('../controllers/messageController');
+const getDirect = async (req, res) => {
+    const id = req.params.id;
 
-const listDirect = async (req, res) => {
-    console.log(req.user);
     try {
-        const user = await User.findById(req.user.id);
-        const directs = user.directs;
-        if (directs.length > 0) {
-            const promises = directs.map(directId => {
-                return Direct.findById(directId).exec(); // use exec() to execute the query and return a promise
-            });
-            const results = await Promise.all(promises); // wait for all promises to resolve
-            return res.json(apiCode.success(results, "List Direct Success"));
-        } else {
-            return res.json(apiCode.error(null, "List Direct Fail"));
+        const direct = await Direct.findById(id);
+        if (!direct) {
+            return res.status(404).json(apiCode.error('Direct not found'));
         }
-    } catch (err) {
-        console.error(err);
-        return res.json(apiCode.error(null, "List Direct Fail"));
+
+        res.status(200).json(apiCode.success(direct, 'Get Direct Success'));
+    }
+    catch (error) {
+        res.status(500).json({ message: error.message });
     }
 }
 
-const getMessages = async (req, res) => {
-    try {
-        const directId = req.query.directId; // how to test on postman
-        const direct = await Direct.findById(directId);
-        if (direct) {
-            const messages = direct.messages;
-            if (messages.length > 0) {
-                const promises =  messages.map(messageId =>  {
-                    return getMessageById(messageId);
-                });
-                const results = await Promise.all(promises);
-                // const senderIDs = results.map(message => message.senderID);
-                // const content = results.map(message => message.content);
-                const messageData = results.map(message => {
-                    return {
-                        senderID: message.senderID,
-                        content: message.content
+const getDirects = async (req, res) => {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    if(user.directs.length === 0){
+        return res.status(404).json(apiCode.error('Directs not found'));
+    }else{
+        const directs = await Direct.find({ _id: { $in: user.directs } });
+        res.status(200).json(apiCode.success(directs, 'Get Directs Success'));
+    };
+  }
+
+//info: receiverName, photoURL, lastMessage, lastMessageTime, unreadMessageCount, isOnline
+const getInfoChatItem = async (req, res) => {
+    try{
+        const userId = req.user.id;
+        const user = await User.findById(userId);
+        const directs = await Direct.find({ _id: { $in: user.directs } });
+        let infoChatItems = [];
+        for (let i = 0; i < directs.length; i++) {
+            const direct = directs[i];
+            const chatRoom = await ChatRoom.findById(direct.chatRoomId);
+            const receiver = await User.findById(direct.receiverId);
+            const lastMessageId = chatRoom.lastMessage? chatRoom.lastMessage : null;
+            let lastMessage;
+            if (!lastMessageId) {
+                lastMessage = {
+                    text: 'new chat',
+                    createAt: 'null'
+                }
+            }else{
+                const message = await Message.findById(lastMessageId);
+                lastMessage = {
+                    text: message.content === '' ? 'Đã gửi một media' : message.content,
+                    time: formatTime(Date.now() - message.createAt)
+                }
+
+                function formatTime(milliseconds) {
+                    const seconds = Math.floor(milliseconds / 1000);
+                    if (seconds < 60) {
+                        return seconds + ' seconds ago';
                     }
-                });
-                return res.json(apiCode.success(messageData, "Get Messages Success"));
-            } else {
-                return res.json(apiCode.error(null, "Get Messages Fail"));
+                    const minutes = Math.floor(seconds / 60);
+                    if (minutes < 60) {
+                        return minutes + ' minutes ago';
+                    }
+                    const hours = Math.floor(minutes / 60);
+                    if (hours < 24) {
+                        return hours + ' hours ago';
+                    }
+                    const days = Math.floor(hours / 24);
+                    return days + ' days ago';
+                }
             }
-        } else {
-            return res.json(apiCode.error(null, "Get Messages Fail"));
+            // let unreadMessageCount = 0;
+            // for (let j = 0; j < chatRoom.messages.length; j++) {
+            //     if (!chatRoom.messages[j].isRead && chatRoom.messages[j].sender != userId) {
+            //         unreadMessageCount++;
+            //     }
+            // }
+            const infoChatItem = {
+                idChatRoom: chatRoom._id,
+                name: receiver.displayName,
+                photoURL: receiver.photoURL,
+                lastMessage: lastMessage,
+                unreadMessageCount: direct.unreadMessageCount,
+                isOnline: user.isOnline
+            };
+            infoChatItems.push(infoChatItem);
         }
-    } catch (err) {
-        console.error(err);
-        return res.json(apiCode.error(null, "Get Messages Fail"));
+        res.status(200).json(apiCode.success(infoChatItems, 'Get Info Chat Item Success'));
+    }catch (error) {
+        res.status(500).json({ message: error.message });
     }
 }
-
-module.exports = { listDirect, getMessages };
+module.exports = {
+    getDirect,
+    getDirects,
+    getInfoChatItem
+}

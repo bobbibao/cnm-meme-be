@@ -11,6 +11,9 @@ const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getPr
         searchUser, addFriend, acceptFriend, getAllFriendRequest, getUserProfile, getUserByChatRoomId, getUser} 
 = require('../controllers/userController');
 
+const { getDirect, getDirects, getInfoChatItem } = require('../controllers/directController');
+const { getChatRoom, getChatRoomByDirectId } = require('../controllers/chatRoomController');
+
 const otpController = require("../controllers/otpController");
 
 const { 
@@ -18,6 +21,9 @@ const {
     getMessages } = require("../controllers/directController");
 
 
+router.get('/direct/:id', authenticateJWT, getDirect);
+router.get('/directs/', authenticateJWT, getDirects);
+router.get('/info-chat-item/', authenticateJWT, getInfoChatItem);
 
 router.get("/list-message", listMessage);
 router.post("/direct/:direct/send-message", authenticateJWT, sendMessage);
