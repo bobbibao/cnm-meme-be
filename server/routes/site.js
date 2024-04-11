@@ -19,7 +19,7 @@ const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getPr
 
 
 const { getMessage, getMessages, searchMessages, unsentMessage, sendMessage, sendMedia, reactMessage,
-    forwardMessage, hideMessage } = require('../controllers/messageController');
+    forwardMessage, hideMessage, deleteMessage } = require('../controllers/messageController');
 
 //Group detail
 router.get('/groupDetail/:id', authenticateJWT, getGroupDetail);
@@ -64,5 +64,7 @@ router.patch('/unsent-message/:id', authenticateJWT, unsentMessage);
 router.patch('/hide-message/:id', authenticateJWT, hideMessage);
 router.patch('/react-message/:id', authenticateJWT, reactMessage);
 router.patch('/forward-message/:id', authenticateJWT, forwardMessage);
+router.delete('/message/:id', authenticateJWT, deleteMessage);
+
 
 module.exports = router;

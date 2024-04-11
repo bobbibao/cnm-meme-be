@@ -231,6 +231,7 @@ const forwardMessage = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 const hideMessage = async (req, res) => {
   const id = req.params.id;
   try {
@@ -247,6 +248,28 @@ const hideMessage = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+const deleteMessage = async (req, res) => {
+  const id = req.params.id;
+  try {
+    const message = await Message.findById(id);
+    if (!message) {
+      return res.status(404).json(apiCode.error("Message not found"));
+    }else {
+      const chatRoom = await ChatRoom.findOne({ messages: { $in: [id] } });
+      chatRoom.messages = chatRoom.messages.filter(messageId => messageId.toString() !== id);
+      chatRoom.lastMessage = chatRoom.messages[chatRoom.messages.length - 1];
+      //how to delete a message in Message collection: 
+      await message.deleteOne();
+      await chatRoom.save();
+      
+      return res.status(200).json(apiCode.success(message, "Delete Message Success"));
+    }
+  }catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getMessage,
   getMessages,
@@ -256,6 +279,7 @@ module.exports = {
   unsentMessage,
   reactMessage,
   forwardMessage,
-  hideMessage
+  hideMessage,
+  deleteMessage
 
 }
