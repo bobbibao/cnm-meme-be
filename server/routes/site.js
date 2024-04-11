@@ -11,6 +11,7 @@ const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getPr
         searchUser, addFriend, acceptFriend, getAllFriendRequest, getUserProfile, getUserByChatRoomId, getUser} 
 = require('../controllers/userController');
 
+const { getGroupDetail, getGroupDetails } = require('../controllers/groupController');
 const { getDirect, getDirects, getInfoChatItem } = require('../controllers/directController');
 const { getChatRoom, getChatRoomByDirectId } = require('../controllers/chatRoomController');
 
@@ -20,6 +21,8 @@ const {
     listDirect, 
     getMessages } = require("../controllers/directController");
 
+router.get('/groupDetail/:id', authenticateJWT, getGroupDetail);
+router.get('/groupDetails/', authenticateJWT, getGroupDetails);
 
 router.get('/direct/:id', authenticateJWT, getDirect);
 router.get('/directs/', authenticateJWT, getDirects);
