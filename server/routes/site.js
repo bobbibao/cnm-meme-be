@@ -12,6 +12,7 @@ const otpController = require("../controllers/otpController");
 const { getGroupDetail, getGroupDetails } = require('../controllers/groupDetailController');
 const { getDirect, getDirects, getInfoChatItem } = require('../controllers/directController');
 const { getChatRoom, getChatRoomByDirectId } = require('../controllers/chatRoomController');
+const { getGroup, getGroups, getGroupByGroupDetailId, getInfoGroupItem } = require('../controllers/groupController');
 
 const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getProfile, updateAvatar,
     searchUser, addFriend, acceptFriend, getAllFriendRequest, getUserProfile, getUserByChatRoomId, getUser} 
@@ -24,6 +25,12 @@ const { getMessage, getMessages, searchMessages, unsentMessage, sendMessage, sen
 //Group detail
 router.get('/groupDetail/:id', authenticateJWT, getGroupDetail);
 router.get('/groupDetails/', authenticateJWT, getGroupDetails);
+
+//Group
+router.get('/group/:id', authenticateJWT, getGroup);
+router.get('/groups/', authenticateJWT, getGroups);
+router.get('/groupByGroupDetailId/:groupDetailId', authenticateJWT, getGroupByGroupDetailId);
+router.get('/info-group-items', authenticateJWT, getInfoGroupItem);
 
 //Direct
 router.get('/direct/:id', authenticateJWT, getDirect);
