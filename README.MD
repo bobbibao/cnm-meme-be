@@ -1,8 +1,12 @@
 # MeMe_ChatApp_Backend
 
 ## Author
-- [Tu Uyen]()
-- 
+- [Lê Hoàng Bảo (Lead)]()
+- [Nguyễn Huỳnh Anh Thắng (Mentor)]()
+- [Trần Văn Bảo]()
+- [Lê Trần Tú Uyên]()
+- [Kiều Thị Thuỳ Dương]()
+- [Ngô Thiên Bâng]()
 
 ## Description
 - MeMe ChatApp BackEnd is a server application developed using NodeJS, Express, MongoDB, Socket.io, and other technologies. It provides a RESTful API for the client application to interact with the database and Socket.io for real-time chat features.

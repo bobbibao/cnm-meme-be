@@ -75,10 +75,11 @@ const getGroupIdsByUserId = async (userId) => {
     const groups = await Group.find({ _id: { $in: groupDetails.map(groupDetail => groupDetail.groupId) } });
     return groups.map(group => group._id);
 };
+
 module.exports = {
     getGroup,
     getGroups,
     getGroupByGroupDetailId,
     getInfoGroupItem,
-    getGroupIdsByUserId
+    getGroupIdsByUserId,
 };

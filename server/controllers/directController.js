@@ -32,7 +32,6 @@ const getDirects = async (req, res) => {
     };
   }
 
-//info: receiverName, photoURL, lastMessage, lastMessageTime, unreadMessageCount, isOnline
 const getInfoChatItem = async (req, res) => {
     try{
         const userId = req.user.id;
@@ -95,6 +94,7 @@ const getInfoChatItem = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
+
 module.exports = {
     getDirect,
     getDirects,

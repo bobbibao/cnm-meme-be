@@ -1,4 +1,3 @@
-
 const Direct = require('../models/Direct');
 const ApiCode = require("../utils/apicode");
 const apiCode = new ApiCode();
