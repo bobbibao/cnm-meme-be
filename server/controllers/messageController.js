@@ -231,7 +231,22 @@ const forwardMessage = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
+const hideMessage = async (req, res) => {
+  const id = req.params.id;
+  try {
+    const message = await Message.findById(id);
+    if (!message) {
+      return res.status(404).json(apiCode.error("Message not found"));
+    }
+    else {
+      message.hidedUsers.push(req.user.id);
+      await message.save();
+      return res.status(200).json(apiCode.success(message, "Hide Message Success"));
+    }
+  }catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 module.exports = {
   getMessage,
   getMessages,
@@ -240,6 +255,7 @@ module.exports = {
   sendMedia,
   unsentMessage,
   reactMessage,
-  forwardMessage
+  forwardMessage,
+  hideMessage
 
 }
