@@ -18,7 +18,7 @@ const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getPr
         = require('../controllers/userController');
 
 
-const { getMessage, getMessages, searchMessages, unsentMessage, sendMessage, sendMedia } = require('../controllers/messageController');
+const { getMessage, getMessages, searchMessages, unsentMessage, sendMessage, sendMedia, reactMessage } = require('../controllers/messageController');
 
 //Group detail
 router.get('/groupDetail/:id', authenticateJWT, getGroupDetail);
@@ -60,5 +60,6 @@ router.post('/search-messages', authenticateJWT, searchMessages);
 router.post('/send-message/', authenticateJWT, sendMessage);
 router.post('/send-media/', authenticateJWT, upload.array('media'), sendMedia);
 router.patch('/unsent-message/:id', authenticateJWT, unsentMessage);
+router.patch('/react-message/:id', authenticateJWT, reactMessage);
 
 module.exports = router;

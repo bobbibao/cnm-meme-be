@@ -169,6 +169,40 @@ const unsentMessage = async (req, res) => {
   }
 };
 
+const reactMessage = async (req, res) => {
+  try {
+    const messageId = req.params.id;
+    const { reaction } = req.body.data;
+    const validReactions = ["like", "love", "haha", "wow", "sad", "angry"];
+    if (!validReactions.includes(reaction)) {
+      return res.status(400).json(apiCode.error("Invalid reaction"));
+    }
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json(apiCode.error("Message not found"));
+    }
+    const userId = req.user.id;
+    const userReactions = message.reactions;
+  //   reactions: [{
+  //     userId: Types.ObjectId,
+  //     reaction: {
+  //         type: String,
+  //         default: ''
+  //     }
+  // }],
+    const userReaction = userReactions.find(reaction => reaction.userId.toString() === userId);
+    if (userReaction) {
+      userReaction.reaction = reaction;
+    } else {
+      userReactions.push({ userId, reaction });
+    }
+    message.reactions = userReactions;
+    await message.save();
+    return res.status(200).json(apiCode.success(message, "React Message Success"));
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
 module.exports = {
   getMessage,
   getMessages,
@@ -176,5 +210,6 @@ module.exports = {
   sendMessage,
   sendMedia,
   unsentMessage,
+  reactMessage
 
 }
