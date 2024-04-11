@@ -203,6 +203,35 @@ const reactMessage = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+const forwardMessage = async (req, res) => {
+  const id = req.params.id;
+  const { chatRoomId } = req.body.data;
+  try {
+    const message = await Message.findById(id);
+    if (!message) {
+      return res.status(404).json(apiCode.error("Message not found"));
+    }
+    else {
+      const newMessage = new Message({
+        senderID: req.user.id,
+        content: message.content,
+        type: message.type,
+        media: message.media,
+        isForwarded: true
+      });
+      const chatRoom = await ChatRoom.findById(chatRoomId);
+      chatRoom.messages.push(newMessage._id);
+      chatRoom.lastMessage = newMessage._id;
+      await newMessage.save();
+      await chatRoom.save();
+      return res.status(200).json(apiCode.success(newMessage, "Forward Message Success"));
+    }
+  }catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getMessage,
   getMessages,
@@ -210,6 +239,7 @@ module.exports = {
   sendMessage,
   sendMedia,
   unsentMessage,
-  reactMessage
+  reactMessage,
+  forwardMessage
 
 }
