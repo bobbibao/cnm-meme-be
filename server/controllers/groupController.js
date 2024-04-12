@@ -185,6 +185,74 @@ const addMember = async (req, res) => {
         res.status(500).json({ error: 'Đã xảy ra lỗi khi thêm thành viên vào nhóm' });
     }
 };
+const deleteMember = async(req,res)=>{
+    try {
+        const ownerId = req.user.id;
+        const groupId = req.params.groupId;
+        const { members } = req.body;
+        if (!groupId || !members || members.length === 0) {
+            return res.status(400).json({ error: 'Vui lòng cung cấp ID nhóm và ít nhất một thành viên mới' });
+        }
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ error: 'Không tìm thấy nhóm' });
+        }
+        if (group.ownerId.toString() !== ownerId) {
+            return res.status(403).json({ error: 'Bạn không có quyền thêm thành viên vào nhóm này' });
+        }
+        const filteredMembers = members.filter(member => {
+            return group.members.some(existingMember => existingMember.userId.toString() === member.userId);
+        });
+        filteredMembers.forEach(member => {
+            group.members = group.members.filter(existingMember => existingMember.userId.toString() !== member.userId);
+        });
+        if (filteredMembers.length === 0) {
+            return res.status(400).json({ error: 'Tất cả các thành viên mới đã tồn tại trong nhóm' });
+        }
+        await group.save();
+        res.status(200).json({ success: true, message: 'Thành viên đã được xóa khỏi nhóm' });
+    } catch (error) {
+        console.error('Lỗi khi xóa thành viên khỏi nhóm:', error);
+        res.status(500).json({ error: 'Đã xảy ra lỗi khi xóa thành viên khỏi nhóm' });
+    }
+
+}
+const outGroup = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const groupId = req.params.groupId;
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ error: "Không tìm thấy nhóm" });
+    }
+
+    const memberIndex = group.members.findIndex(
+      (member) => member.userId.toString() === userId
+    );
+    if (memberIndex === -1) {
+      return res
+        .status(404)
+        .json({ error: "Không tìm thấy thành viên trong nhóm" });
+    }
+
+    // Kiểm tra xem nhóm chỉ còn một thành viên hay không
+    if (group.members.length === 1) {
+      return res
+        .status(403)
+        .json({
+          error:
+            "Bạn không thể rời khỏi nhóm vì bạn là người dùng cuối cùng trong nhóm",
+        });
+    }
+
+    group.members.splice(memberIndex, 1);
+    await group.save();
+    res.status(200).json({ success: true, message: "Bạn đã rời khỏi nhóm" });
+  } catch (error) {
+    console.error("Lỗi khi rời khỏi nhóm:", error);
+    res.status(500).json({ error: "Đã xảy ra lỗi khi rời khỏi nhóm" });
+  }
+};
 
 
 module.exports = {
@@ -194,6 +262,8 @@ module.exports = {
     getInfoGroupItem,
     getGroupIdsByUserId,
     addMember,
-    createGroup
+    createGroup,
+    deleteMember,
+    outGroup
     
 };
