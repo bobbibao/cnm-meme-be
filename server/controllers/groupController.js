@@ -3,6 +3,9 @@ const User = require('../models/user');
 const GroupDetail = require('../models/groupDetail');
 const ChatRoom = require('../models/chatRoom');
 const ApiCode = require("../utils/apicode");
+const Roles = require('../utils/rolesEnum');
+const {checkPermsOfUserInGroup} = require('../utils/permission');
+
 const apiCode = new ApiCode();
 
 const getGroup = async (req, res) => {
@@ -52,7 +55,7 @@ const getInfoGroupItem = async (req, res) => {
         const groupDetails = await GroupDetail.find({ _id: { $in: user.groupDetails } });
         const groups = await Group.find({ _id: { $in: groupDetails.map(groupDetail => groupDetail.groupId) } });
         const chatRooms = await ChatRoom.find({ _id: { $in: groups.map(group => group.chatRoomId) } });
-        
+
         const infoGroupItems = groups.map(group => {
             const chatRoom = chatRooms.find(chatRoom => chatRoom._id.equals(group.chatRoomId));
             return {
@@ -103,9 +106,10 @@ const createGroup = async (req, res) => {
         // Thêm ownerId vào danh sách thành viên nếu chưa tồn tại
         const updatedMembers = members.map(member => ({
             _id: member._id,
-            userId: member.userId, 
+            userId: member.userId,
             addByUserId: ownerId,
-            roles: member.roles || [],
+            // Mặc định roles ban đầu là member
+            roles: member.roles || [ Roles.MEMBER ],
             addAt: Date.now()
         }));
         // Tạo mới chat room
@@ -135,7 +139,6 @@ const addMember = async (req, res) => {
     try {
         // Lấy ID của người đăng nhập từ JWT
         const ownerId = req.user.id;
-
         // Lấy ID của nhóm từ URL
         const groupId = req.params.groupId;
 
@@ -149,13 +152,17 @@ const addMember = async (req, res) => {
 
         // Tìm nhóm dựa trên groupId
         const group = await Group.findById(groupId);
+        console.log(checkPermsOfUserInGroup(ownerId, group).isOwner());
+        console.log(checkPermsOfUserInGroup(ownerId, group).isAdmin());
+        console.log(checkPermsOfUserInGroup(ownerId, group).canEditMember());
 
         // Kiểm tra tính hợp lệ của nhóm
         if (!group) {
             return res.status(404).json({ error: 'Không tìm thấy nhóm' });
         }
         // Kiểm tra quyền thêm thành viên vào nhóm
-        if (group.ownerId.toString() !== ownerId) {
+        if (checkPermsOfUserInGroup(ownerId, group).isOwner()
+            || checkPermsOfUserInGroup(ownerId, group).isAdmin()) {
             return res.status(403).json({ error: 'Bạn không có quyền thêm thành viên vào nhóm này' });
         }
         // Lọc các thành viên mới để loại bỏ những thành viên đã tồn tại trong nhóm
@@ -167,7 +174,8 @@ const addMember = async (req, res) => {
             group.members.push({
                 userId: member.userId,
                 addByUserId: ownerId,
-                roles: member.roles || [],
+                // MẶc định ban đàu roles là member
+                roles: member.roles || [Roles.MEMBER],
                 addAt: Date.now()
             });
         });
@@ -176,7 +184,7 @@ const addMember = async (req, res) => {
             return res.status(400).json({ error: 'Tất cả các thành viên mới đã tồn tại trong nhóm' });
         }
         // Lưu lại thông tin nhóm đã cập nhật
-        await group.save();
+        // await group.save();
         // Trả về phản hồi thành công
         res.status(200).json({ success: true, message: 'Thành viên đã được thêm vào nhóm' });
     } catch (error) {
