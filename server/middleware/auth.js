@@ -6,7 +6,7 @@ const authenticateJWT = (req, res, next) => {
     if (!token) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
-  
+
     jwt.verify(token, secretKey, (err, user) => {
       if (err) {
         return res.status(403).json({ message: 'Forbidden' });
