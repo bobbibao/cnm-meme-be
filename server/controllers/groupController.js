@@ -79,61 +79,146 @@ const getGroupIdsByUserId = async (userId) => {
     return groups.map(group => group._id);
 };
 
+// const createGroup = async (req, res) => {
+//     try {
+//         // Lấy ID của người đăng nhập từ JWT
+//         const ownerId = req.user.id;
+//         // Lấy tên của nhóm và danh sách thành viên từ body của yêu cầu
+//         const { name, members } = req.body;
+//         // Kiểm tra xem tên nhóm và danh sách thành viên có được cung cấp không
+//         if (!name || !members || members.length < 2) {
+//             return res.status(400).json(apiCode.error('Tên nhóm và ít nhất hai thành viên là bắt buộc'));
+//         }
+//         // Tìm tất cả các nhóm có số lượng thành viên và thành viên giống với nhóm mới
+//         const existingGroups = await Group.find({ members: { $size: members.length } });
+//         // Kiểm tra xem có nhóm nào trùng với nhóm mới không
+//         const duplicateGroup = existingGroups.find(existingGroup => {
+//             // So sánh danh sách thành viên của nhóm mới với các nhóm đã tồn tại
+//             const sortedExistingMembers = existingGroup.members.map(member => member.userId && member.userId.toString()).sort();
+//             const sortedNewMembers = members.map(member => member.userId && member.userId.toString()).sort();
+
+//             // Kiểm tra xem hai danh sách thành viên có giống nhau không
+//             return JSON.stringify(sortedExistingMembers) === JSON.stringify(sortedNewMembers);
+//         });
+//         if (duplicateGroup) {
+//             return res.status(400).json(apiCode.error('Nhóm đã tồn tại'));
+//         }
+//         // Thêm ownerId vào danh sách thành viên nếu chưa tồn tại
+//         const updatedMembers = members.map(member => ({
+//             _id: member._id,
+//             userId: member.userId,
+//             addByUserId: ownerId,
+//             // Mặc định roles ban đầu là member
+//             roles: member.roles || [ Roles.MEMBER ],
+//             addAt: Date.now()
+//         }));
+//         // Tạo mới chat room
+//         const chatRoom = new ChatRoom({});
+//         // Lưu chat room vào cơ sở dữ liệu
+//         await chatRoom.save();
+//         // Tạo mới nhóm với thông tin từ yêu cầu và danh sách thành viên đã được cập nhật
+//         const newGroup = new Group({
+//             name,
+//             ownerId,
+//             members: updatedMembers,
+//             chatRoomId: chatRoom._id // Gán chat room ID cho nhóm
+//         });
+//         // Lưu nhóm mới vào cơ sở dữ liệu
+//         await newGroup.save();
+
+//         // Trả về phản hồi thành công, loại bỏ các trường "_id"
+//         res.status(201).json(apiCode.success(newGroup.toJSON({ getters: true }), 'Nhóm đã được tạo thành công'));
+//     } catch (error) {
+//         // Xử lý lỗi nếu có
+//         console.error('Lỗi khi tạo nhóm:', error);
+//         res.status(500).json(apiCode.error('Đã xảy ra lỗi khi tạo nhóm'));
+//     }
+// };
 const createGroup = async (req, res) => {
-    try {
-        // Lấy ID của người đăng nhập từ JWT
-        const ownerId = req.user.id;
-        // Lấy tên của nhóm và danh sách thành viên từ body của yêu cầu
-        const { name, members } = req.body;
-        // Kiểm tra xem tên nhóm và danh sách thành viên có được cung cấp không
-        if (!name || !members || members.length < 2) {
-            return res.status(400).json(apiCode.error('Tên nhóm và ít nhất hai thành viên là bắt buộc'));
-        }
-        // Tìm tất cả các nhóm có số lượng thành viên và thành viên giống với nhóm mới
-        const existingGroups = await Group.find({ members: { $size: members.length } });
-        // Kiểm tra xem có nhóm nào trùng với nhóm mới không
-        const duplicateGroup = existingGroups.find(existingGroup => {
-            // So sánh danh sách thành viên của nhóm mới với các nhóm đã tồn tại
-            const sortedExistingMembers = existingGroup.members.map(member => member.userId && member.userId.toString()).sort();
-            const sortedNewMembers = members.map(member => member.userId && member.userId.toString()).sort();
-
-            // Kiểm tra xem hai danh sách thành viên có giống nhau không
-            return JSON.stringify(sortedExistingMembers) === JSON.stringify(sortedNewMembers);
-        });
-        if (duplicateGroup) {
-            return res.status(400).json(apiCode.error('Nhóm đã tồn tại'));
-        }
-        // Thêm ownerId vào danh sách thành viên nếu chưa tồn tại
-        const updatedMembers = members.map(member => ({
-            _id: member._id,
-            userId: member.userId,
-            addByUserId: ownerId,
-            // Mặc định roles ban đầu là member
-            roles: member.roles || [ Roles.MEMBER ],
-            addAt: Date.now()
-        }));
-        // Tạo mới chat room
-        const chatRoom = new ChatRoom({});
-        // Lưu chat room vào cơ sở dữ liệu
-        await chatRoom.save();
-        // Tạo mới nhóm với thông tin từ yêu cầu và danh sách thành viên đã được cập nhật
-        const newGroup = new Group({
-            name,
-            ownerId,
-            members: updatedMembers,
-            chatRoomId: chatRoom._id // Gán chat room ID cho nhóm
-        });
-        // Lưu nhóm mới vào cơ sở dữ liệu
-        await newGroup.save();
-
-        // Trả về phản hồi thành công, loại bỏ các trường "_id"
-        res.status(201).json(apiCode.success(newGroup.toJSON({ getters: true }), 'Nhóm đã được tạo thành công'));
-    } catch (error) {
-        // Xử lý lỗi nếu có
-        console.error('Lỗi khi tạo nhóm:', error);
-        res.status(500).json(apiCode.error('Đã xảy ra lỗi khi tạo nhóm'));
+  try {
+    // Lấy ID của người đăng nhập từ JWT
+    const ownerId = req.user.id;
+    // Lấy tên của nhóm và danh sách thành viên từ body của yêu cầu
+    const { name, members } = req.body;
+    // Kiểm tra xem tên nhóm và danh sách thành viên có được cung cấp không
+    if (!name || !members || members.length < 2) {
+      return res
+        .status(400)
+        .json(apiCode.error("Tên nhóm và ít nhất hai thành viên là bắt buộc"));
     }
+    // Tìm tất cả các nhóm có số lượng thành viên và thành viên giống với nhóm mới
+    const existingGroups = await Group.find({
+      members: { $size: members.length },
+    });
+    // Kiểm tra xem có nhóm nào trùng với nhóm mới không
+    const duplicateGroup = existingGroups.find((existingGroup) => {
+      // So sánh danh sách thành viên của nhóm mới với các nhóm đã tồn tại
+      const sortedExistingMembers = existingGroup.members
+        .map((member) => member.userId && member.userId.toString())
+        .sort();
+      const sortedNewMembers = members
+        .map((member) => member.userId && member.userId.toString())
+        .sort();
+
+      // Kiểm tra xem hai danh sách thành viên có giống nhau không
+      return (
+        JSON.stringify(sortedExistingMembers) ===
+        JSON.stringify(sortedNewMembers)
+      );
+    });
+    if (duplicateGroup) {
+      return res.status(400).json(apiCode.error("Nhóm đã tồn tại"));
+    }
+    // Thêm ownerId vào danh sách thành viên nếu chưa tồn tại
+    const updatedMembers = members.map((member) => ({
+      _id: member._id,
+      userId: member.userId,
+      addByUserId: ownerId,
+      // Mặc định roles ban đầu là admin cho thành viên và owner cho người tạo
+      roles: member.userId === ownerId ? [Roles.OWNER] : [Roles.ADMIN],
+      addAt: Date.now(),
+    }));
+
+    // Thêm người tạo nhóm vào danh sách thành viên với quyền là "owner"
+    updatedMembers.push({
+      _id: ownerId,
+      userId: ownerId,
+      addByUserId: ownerId,
+      roles: [Roles.OWNER],
+      addAt: Date.now(),
+    });
+
+    // Tạo mới chat room
+    const chatRoom = new ChatRoom({});
+    // Lưu chat room vào cơ sở dữ liệu
+    await chatRoom.save();
+    // Tạo mới nhóm với thông tin từ yêu cầu và danh sách thành viên đã được cập nhật
+    const newGroup = new Group({
+      name,
+      ownerId,
+      members: updatedMembers,
+      chatRoomId: chatRoom._id, // Gán chat room ID cho nhóm
+    });
+    // Lưu nhóm mới vào cơ sở dữ liệu
+    await newGroup.save();
+
+    // Trả về phản hồi thành công, loại bỏ các trường "_id"
+    res
+      .status(201)
+      .json(
+        apiCode.success(
+          newGroup.toJSON({ getters: true }),
+          "Nhóm đã được tạo thành công"
+        )
+      );
+  } catch (error) {
+    // Xử lý lỗi nếu có
+    console.error("Lỗi khi tạo nhóm:", error);
+    res.status(500).json(apiCode.error("Đã xảy ra lỗi khi tạo nhóm"));
+  }
 };
+
+
 
 const addMember = async (req, res) => {
     try {
@@ -262,16 +347,54 @@ const outGroup = async (req, res) => {
   }
 };
 
+const deleteGroup = async (req, res) => {
+  try {
+    // Lấy ID của người đăng nhập từ JWT
+    const userId = req.user.id;
+    // Lấy ID của nhóm từ body của yêu cầu
+    const groupId = req.body.id;
+    // Tìm nhóm dựa trên ID nhóm
+    const group = await Group.findById(groupId);
+    // Kiểm tra xem nhóm có tồn tại không
+    if (!group) {
+      return res.status(404).json(apiCode.error("Nhóm không tồn tại"));
+    }
+    // Kiểm tra xem người dùng có quyền "owner" trong nhóm không
+    const isOwner = group.members.some(
+      (member) =>
+        member.userId &&
+        member.roles &&
+        member.userId.toString() === userId &&
+        member.roles.includes(Roles.OWNER)
+    );
+    // Nếu người dùng không phải là "owner", trả về lỗi
+    if (!isOwner) {
+      return res
+        .status(403)
+        .json(apiCode.error("Bạn không có quyền xóa nhóm này"));
+    }
+    // Xóa nhóm
+    await Group.findByIdAndDelete(groupId);
+    // Trả về phản hồi thành công
+    res.status(200).json(apiCode.success(null, "Nhóm đã được xóa thành công"));
+  } catch (error) {
+    // Xử lý lỗi nếu có
+    console.error("Lỗi khi xóa nhóm:", error);
+    res.status(500).json(apiCode.error("Đã xảy ra lỗi khi xóa nhóm"));
+  }
+};
+
+
 
 module.exports = {
-    getGroup,
-    getGroups,
-    getGroupByGroupDetailId,
-    getInfoGroupItem,
-    getGroupIdsByUserId,
-    addMember,
-    createGroup,
-    deleteMember,
-    outGroup
-    
+  getGroup,
+  getGroups,
+  getGroupByGroupDetailId,
+  getInfoGroupItem,
+  getGroupIdsByUserId,
+  addMember,
+  createGroup,
+  deleteMember,
+  outGroup,
+  deleteGroup,
 };
