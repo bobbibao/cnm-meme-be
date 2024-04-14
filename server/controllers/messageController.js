@@ -2,6 +2,7 @@ const Message = require("../models/message");
 const ChatRoom = require("../models/chatRoom");
 const Direct = require("../models/Direct");
 const ApiCode = require("../utils/apicode");
+const User = require("../models/user");
 const apiCode = new ApiCode();
 const { Types } = require('mongoose');
 
@@ -35,6 +36,7 @@ const getMessages = async (req, res) => {
   try{
     const chatRoomId = req.params.chatRoomId;
     const direct = await Direct.findOne({ receiverId: { $ne: req.user.id }, chatRoomId: chatRoomId });
+    const receiver = await User.findById(direct.receiverId);
     const chatRoom = await ChatRoom.findById(chatRoomId);
     if(!chatRoom || !direct || !chatRoom.messages || chatRoom.messages.length === 0 || !chatRoom.messages[0]){
       console.log('Messages not found');
@@ -46,6 +48,7 @@ const getMessages = async (req, res) => {
         return {
           id: message._id,
           content: message.content,
+          receiverPhoto: receiver.photoURL,
           sent: req.user.id === message.senderID.toString(),
           unsent: message.isDeleted,
           isForwarded: message.isForwarded? true : false,
