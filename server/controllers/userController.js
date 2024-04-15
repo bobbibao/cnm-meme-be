@@ -466,15 +466,25 @@ const getUserByChatRoomId = async (req, res) => {
   }
 };
 
-const getUserProfile = async (req, res) => {
+const getUsersByChatRoomId = async (chatRoomId) =>{
+  try {
+    const direct = await Direct.findOne({
+      chatRoomId: chatRoomId
+    });
+    console.log(direct);
+  } catch (err) {
+    console.error(err);
+  }
+}
+async function getUserProfile(req, res) {
   try {
     const username = req.params.username;
-    const user = await User.findOne({ username }, 'displayName email gender photoURL thumbnailURL dateOfBirth phoneNumber groupDetails')
+    const user = await User.findOne({ username }, 'displayName email gender photoURL thumbnailURL dateOfBirth phoneNumber groupDetails');
     // .populate('groups
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     const groupIds = await getGroupIdsByUserId(user._id);
     const groupIds2 = await getGroupIdsByUserId(req.user.id);
     a = groupIds2.map((value) => {
@@ -485,7 +495,7 @@ const getUserProfile = async (req, res) => {
     const userProfile = {
       _id: user._id,
       name: user.displayName,
-      email:user.email,
+      email: user.email,
       gender: user.gender,
       avatar: user.photoURL,
       thumbnailURL: user.thumbnailURL,
@@ -499,7 +509,7 @@ const getUserProfile = async (req, res) => {
     console.error('Error fetching user profile:', error);
     res.status(500).json({ message: 'Server error' });
   }
-};
+}
 module.exports = {
   registerUser,
   loginUser,
@@ -514,5 +524,6 @@ module.exports = {
   getAllFriendRequest,
   getUserByChatRoomId, 
   getUserProfile,
-  getUser
+  getUser,
+  getUsersByChatRoomId
 };
