@@ -5,7 +5,7 @@ const router = require("./routes");
 const cors = require('cors');
 const { default: mongoose, now } = require("mongoose");
 const {createMeeting} = require('./api');
-
+const {getUsersByChatRoomId} =  require('./controllers/userController');
 const User = require('./models/user');
 
 require("dotenv").config();
@@ -38,8 +38,8 @@ mongoose.connect(mongodb_connect_string)
       socket.on('setup', async (userId) => {
         try{
           userId = JSON.parse(userId);
-          // socket.join(userId);
           socket.userId = userId;
+          socket.join(userId);
           const user = await User.findById(userId);
           user.isOnline = true;
           await user.save();
@@ -102,10 +102,25 @@ mongoose.connect(mongodb_connect_string)
         }
       });
 
-      socket.on('call', (data) => {
+      socket.on('call', (chatRoomId) => {
         createMeeting().then((meetingId) => {
-          io.to(data.chatRoomId).emit('call', meetingId);
+          io.to(chatRoomId).emit('call', meetingId);
         });
+      });
+      // if(!socket.meetingId){
+      //   createMeeting().then((meetingId) => {
+      //     socket.meetingId = meetingId;
+      //     console.log(meetingId)
+      //     io.to(room).emit('call', meetingId);
+      //   });
+      // }
+      
+      socket.on('notify', async (data) => {
+        console.log("Notification", data);
+        io.to(data.userId).emit('notify', data);
+        // const user = await getUsersByChatRoomId(data.chatRoomId);
+        // console.log(user);
+        // io.to(data.chatRoomId).emit('notify', data);
       });
     });
   })
