@@ -75,6 +75,7 @@ router.get('/info-user/:chatRoomId', authenticateJWT, getUserByChatRoomId);
 
 //Message
 router.get('/message/:id', authenticateJWT, getMessage);
+router.post('/messages/:chatRoomId', authenticateJWT, sendMessage);
 router.get('/messages/:chatRoomId', authenticateJWT, getMessages);
 router.post('/search-messages', authenticateJWT, searchMessages);
 router.post('/send-message/', authenticateJWT, sendMessage);

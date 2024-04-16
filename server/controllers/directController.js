@@ -91,6 +91,59 @@ const getInfoChatItem = async (req, res) => {
         // Kiểm tra xem các promise có lỗi không
         if (directsResult.status === 'rejected' || groupsResult.status === 'rejected') {
             console.log(directsResult.reason);
+        for (let i = 0; i < directs.length; i++) {
+            const direct = directs[i];
+            const chatRoom = await ChatRoom.findById(direct.chatRoomId);
+            const receiver = await User.findById(direct.receiverId);
+            const lastMessageId = chatRoom.lastMessage? chatRoom.lastMessage : null;
+            let lastMessage;
+            if (!lastMessageId) {
+                lastMessage = {
+                    text: 'new chat',
+                    createAt: 'null'
+                }
+            }else{
+                const message = await Message.findById(lastMessageId);
+                if(message === null) {lastMessage = ""; }
+                else{
+                    lastMessage = {
+                    text: message.content === '' ? 'Đã gửi một media' : message.content,
+                    time: formatTime(Date.now() - message.createAt)
+                }
+
+                function formatTime(milliseconds) {
+                    const seconds = Math.floor(milliseconds / 1000);
+                    if (seconds < 60) {
+                        return seconds + ' seconds ago';
+                    }
+                    const minutes = Math.floor(seconds / 60);
+                    if (minutes < 60) {
+                        return minutes + ' minutes ago';
+                    }
+                    const hours = Math.floor(minutes / 60);
+                    if (hours < 24) {
+                        return hours + ' hours ago';
+                    }
+                    const days = Math.floor(hours / 24);
+                    return days + ' days ago';
+                }
+            }
+            }
+            // let unreadMessageCount = 0;
+            // for (let j = 0; j < chatRoom.messages.length; j++) {
+            //     if (!chatRoom.messages[j].isRead && chatRoom.messages[j].sender != userId) {
+            //         unreadMessageCount++;
+            //     }
+            // }
+            const infoChatItem = {
+                idChatRoom: chatRoom._id,
+                name: receiver.displayName,
+                photoURL: receiver.photoURL,
+                lastMessage: lastMessage,
+                unreadMessageCount: direct.unreadMessageCount,
+                isOnline: user.isOnline
+            };
+            infoChatItems.push(infoChatItem);
         }
 
         // Lấy kết quả từ các promise đã giải quyết
