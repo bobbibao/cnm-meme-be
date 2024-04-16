@@ -51,7 +51,9 @@ const getInfoChatItem = async (req, res) => {
                 }
             }else{
                 const message = await Message.findById(lastMessageId);
-                lastMessage = {
+                if(message === null) {lastMessage = ""; }
+                else{
+                    lastMessage = {
                     text: message.content === '' ? 'Đã gửi một media' : message.content,
                     time: formatTime(Date.now() - message.createAt)
                 }
@@ -72,6 +74,7 @@ const getInfoChatItem = async (req, res) => {
                     const days = Math.floor(hours / 24);
                     return days + ' days ago';
                 }
+            }
             }
             // let unreadMessageCount = 0;
             // for (let j = 0; j < chatRoom.messages.length; j++) {

@@ -365,7 +365,9 @@ const addFriend = async (req, res) => {
   const friendId = req.body.friendId;
   try {
     const user = await User.findById(req.user.id);
+    console.log(user);
     const friend = await User.findById(friendId);
+    console.log(friend);
     if (!friend) {
       return res.status(404).json({ message: 'User not found' });
     }

@@ -34,9 +34,9 @@ mongoose.connect(mongodb_connect_string)
       }
     });
     io.on('connection', (socket) => {
-
       socket.on('setup', async (userId) => {
         try{
+          console.log(userId);
           userId = JSON.parse(userId);
           socket.userId = userId;
           socket.join(userId);
@@ -52,7 +52,6 @@ mongoose.connect(mongodb_connect_string)
         userId = JSON.parse(userId);
         socket.join(room);
         socket.emit('join chat', room);
-        
       });
      
       socket.on('message', (message, id) => {
@@ -121,6 +120,16 @@ mongoose.connect(mongodb_connect_string)
         // const user = await getUsersByChatRoomId(data.chatRoomId);
         // console.log(user);
         // io.to(data.chatRoomId).emit('notify', data);
+      });
+      
+      socket.on("accept meeting", async (data) => {
+        console.log("Accept meeting", data);
+        io.to(data.userId).emit('accept meeting', data);
+      });
+
+      socket.on("decline", async (data) => {
+        console.log("Decline meeting", data);
+        io.to(data.userId).emit('decline', data);
       });
     });
   })
