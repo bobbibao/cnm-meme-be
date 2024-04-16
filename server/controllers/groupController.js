@@ -115,22 +115,23 @@ const uploadImageToS3 = async (imageData) => {
 
 const createGroup = async (req, res) => {
   try {
-    
-    console.log("CAI QQ",req.body);
+
     const ownerId = req.user.id;
     const photo=req.file;
-    const { name, members } = req.body;
-    console.log("file nee",req.file);
-    if (!name || !members || members.length < 2) {
-      return res.status(400).json({ error: "Tên nhóm và ít nhất hai thành viên là bắt buộc" });
-    }
-    
+    const  name = req.body.name;
+    const members = JSON.parse(req.body.members)
+    if(!name )
+      return res.status(400).json({ error: "Chưa nhập tên nhóm" })
+
+    if (!members || members.length < 2)
+      return res.status(400).json({ error: "Nhóm phải có ít nhất 3 thành viên trở lên" });
+
     // Thực hiện upload ảnh lên S3 nếu có
     let photoURL = '';
     if (photo) {
       photoURL = await uploadImageToS3(photo);
     }
- 
+
     const existingGroups = await Group.find({ members: { $size: members.length } });
 
     const duplicateGroup = existingGroups.find(existingGroup => {
@@ -144,15 +145,13 @@ const createGroup = async (req, res) => {
     }
 
     const updatedMembers = members.map(member => ({
-      _id: member._id,
-      userId: member.userId,
+      userId: member._id,
       addByUserId: ownerId,
       roles: member.userId === ownerId ? [Roles.OWNER] : [Roles.MEMBER],
       addAt: Date.now(),
     }));
 
     updatedMembers.push({
-      _id: ownerId,
       userId: ownerId,
       addByUserId: ownerId,
       roles: [Roles.OWNER],
@@ -169,8 +168,42 @@ const createGroup = async (req, res) => {
       chatRoomId: chatRoom._id,
       photoURL // Thêm URL của ảnh vào đối tượng newGroup
     });
+    // console.log(newGroup);
 
     await newGroup.save();
+    const newGroupDetail = new GroupDetail({
+      groupId: newGroup._id,
+      isPinned:false,
+      isMuted:false,
+      isDeleted:false,
+      isArchived:false,
+      unreadMessageCount:0
+    })
+    await newGroupDetail.save()
+    members.push(ownerId)
+    // Duyệt qua mỗi thành viên trong mảng members bằng vòng lặp for
+    for (let i = 0; i < members.length; i++) {
+      const memberId = members[i];
+      try {
+          // Tìm kiếm thông tin người dùng bằng ID
+          const user = await User.findById(memberId);
+
+          // Kiểm tra xem user có tồn tại không
+          if (user) {
+              // Nếu user tồn tại, thêm groupId vào field groupId của user
+              user.groupDetails.push(newGroupDetail);
+
+              // Lưu lại thông tin người dùng sau khi cập nhật
+              await user.save();
+          } else {
+              // Xử lý trường hợp user không tồn tại
+              console.error(`User with ID ${memberId} not found`);
+          }
+      } catch (error) {
+          // Xử lý lỗi nếu có
+          console.error(`Error updating user with ID ${memberId}:`, error);
+      }
+    }
 
     res.status(201).json({ message: "Nhóm đã được tạo thành công", group: newGroup });
   } catch (error) {
