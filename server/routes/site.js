@@ -34,7 +34,7 @@ router.get('/info-group-items', authenticateJWT, getInfoGroupItem);
 router.delete('/groups/:groupId/deleteMember', authenticateJWT, deleteMember);
 router.post('/groups/:groupId/outGroup', authenticateJWT, outGroup);
 
-router.post("/creategroup", authenticateJWT, createGroup);
+router.post("/creategroup", authenticateJWT,upload.single('photo'), createGroup);
 router.post("/groups/:groupId/addMember", authenticateJWT, addMember);
 router.post("/delete-group", authenticateJWT, deleteGroup);
 

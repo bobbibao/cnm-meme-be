@@ -5,6 +5,10 @@ const ChatRoom = require('../models/chatRoom');
 const ApiCode = require("../utils/apicode");
 const Roles = require('../utils/rolesEnum');
 const {checkPermsOfUserInGroup} = require('../utils/permission');
+const bodyParser = require('body-parser');
+const express = require('express');
+const app = express();
+app.use(bodyParser.json());
 
 const apiCode = new ApiCode();
 
@@ -79,17 +83,54 @@ const getGroupIdsByUserId = async (userId) => {
     return groups.map(group => group._id);
 };
 
+const AWS = require('aws-sdk');
+
+// Cấu hình AWS SDK với các thông tin cần thiết
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION
+});
+
+const s3 = new AWS.S3();
+
+const uploadImageToS3 = async (imageData) => {
+  const params = {
+    Bucket: process.env.S3_BUCKET_NAME,
+    Key: `group_avatars/${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`, // Key là đường dẫn và tên file trên S3
+    Body: imageData.buffer,
+    ContentType: imageData.mimetype // Kiểu dữ liệu của hình ảnh
+  };
+
+  return new Promise((resolve, reject) => {
+    s3.upload(params, (err, data) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(data.Location); // Trả về URL của ảnh trên S3
+      }
+    });
+  });
+};
 
 const createGroup = async (req, res) => {
-  
   try {
+    
+    console.log("CAI QQ",req.body);
     const ownerId = req.user.id;
+    const photo=req.file;
     const { name, members } = req.body;
-    console.log("HIHII",req.body);
+    console.log("file nee",req.file);
     if (!name || !members || members.length < 2) {
       return res.status(400).json({ error: "Tên nhóm và ít nhất hai thành viên là bắt buộc" });
     }
-
+    
+    // Thực hiện upload ảnh lên S3 nếu có
+    let photoURL = '';
+    if (photo) {
+      photoURL = await uploadImageToS3(photo);
+    }
+ 
     const existingGroups = await Group.find({ members: { $size: members.length } });
 
     const duplicateGroup = existingGroups.find(existingGroup => {
@@ -126,6 +167,7 @@ const createGroup = async (req, res) => {
       ownerId,
       members: updatedMembers,
       chatRoomId: chatRoom._id,
+      photoURL // Thêm URL của ảnh vào đối tượng newGroup
     });
 
     await newGroup.save();
@@ -136,6 +178,7 @@ const createGroup = async (req, res) => {
     res.status(500).json({ error: "Đã xảy ra lỗi khi tạo nhóm" });
   }
 };
+
 
 
 const addMember = async (req, res) => {
@@ -315,4 +358,5 @@ module.exports = {
   deleteMember,
   outGroup,
   deleteGroup,
+  uploadImageToS3
 };
