@@ -5,7 +5,6 @@ const Direct = require("../models/Direct");
 const Group = require("../models/group");
 
 const ApiCode = require("../utils/apicode");
-const User = require("../models/user");
 const apiCode = new ApiCode();
 const { Types } = require('mongoose');
 
