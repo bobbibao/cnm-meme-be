@@ -52,27 +52,38 @@ mongoose.connect(mongodb_connect_string)
         userId = JSON.parse(userId);
         socket.join(room);
         socket.emit('join chat', room);
-        
+
       });
-     
-      socket.on('message', (message, id) => {
-        const newMessage = {
-          id: id,
-          senderId: JSON.parse(message.senderId),
-          content: message.content,
-          time: now().getHours() + ':' + now().getMinutes(),
-          type: message.type,
-          media: message.media,
+
+      socket.on('message', async (message, id) => {
+        try {
+          const parseUserId = JSON.parse(message.senderId)
+            const sender = await User.findById(parseUserId, 'displayName photoURL');
+
+            console.log(sender.displayName);
+            const newMessage = {
+                id: id,
+                senderId: parseUserId,
+                senderName: sender?.displayName,
+                avatarSender: sender?.photoURL,
+                content: message.content,
+                time: now().getHours() + ':' + now().getMinutes(),
+                type: message.type,
+                media: message.media,
+            };
+
+            // console.log('message', newMessage);
+            io.to(message.chatRoomId).emit('message', newMessage);
+        } catch (error) {
+            console.error('Error:', error);
         }
-        console.log('message', newMessage);
-        io.to(message.chatRoomId).emit('message', newMessage);
-      });
+    });
 
       socket.on('delete message', (message) => {
         console.log('delete message', message);
         io.to(message.chatRoomId).emit('delete message', message);
       });
-      
+
       socket.on('unsend message', (message) => {
         io.to(message.chatRoomId).emit('unsend message', {id: message.messageId});
       });
