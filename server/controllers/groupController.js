@@ -5,6 +5,10 @@ const ChatRoom = require('../models/chatRoom');
 const ApiCode = require("../utils/apicode");
 const Roles = require('../utils/rolesEnum');
 const {checkPermsOfUserInGroup} = require('../utils/permission');
+const bodyParser = require('body-parser');
+const express = require('express');
+const app = express();
+app.use(bodyParser.json());
 
 const apiCode = new ApiCode();
 
@@ -79,107 +83,74 @@ const getGroupIdsByUserId = async (userId) => {
     return groups.map(group => group._id);
 };
 
-// const createGroup = async (req, res) => {
-//     try {
-//         // Lấy ID của người đăng nhập từ JWT
-//         const ownerId = req.user.id;
-//         // Lấy tên của nhóm và danh sách thành viên từ body của yêu cầu
-//         const { name, members } = req.body;
-//         // Kiểm tra xem tên nhóm và danh sách thành viên có được cung cấp không
-//         if (!name || !members || members.length < 2) {
-//             return res.status(400).json(apiCode.error('Tên nhóm và ít nhất hai thành viên là bắt buộc'));
-//         }
-//         // Tìm tất cả các nhóm có số lượng thành viên và thành viên giống với nhóm mới
-//         const existingGroups = await Group.find({ members: { $size: members.length } });
-//         // Kiểm tra xem có nhóm nào trùng với nhóm mới không
-//         const duplicateGroup = existingGroups.find(existingGroup => {
-//             // So sánh danh sách thành viên của nhóm mới với các nhóm đã tồn tại
-//             const sortedExistingMembers = existingGroup.members.map(member => member.userId && member.userId.toString()).sort();
-//             const sortedNewMembers = members.map(member => member.userId && member.userId.toString()).sort();
+const AWS = require('aws-sdk');
 
-//             // Kiểm tra xem hai danh sách thành viên có giống nhau không
-//             return JSON.stringify(sortedExistingMembers) === JSON.stringify(sortedNewMembers);
-//         });
-//         if (duplicateGroup) {
-//             return res.status(400).json(apiCode.error('Nhóm đã tồn tại'));
-//         }
-//         // Thêm ownerId vào danh sách thành viên nếu chưa tồn tại
-//         const updatedMembers = members.map(member => ({
-//             _id: member._id,
-//             userId: member.userId,
-//             addByUserId: ownerId,
-//             // Mặc định roles ban đầu là member
-//             roles: member.roles || [ Roles.MEMBER ],
-//             addAt: Date.now()
-//         }));
-//         // Tạo mới chat room
-//         const chatRoom = new ChatRoom({});
-//         // Lưu chat room vào cơ sở dữ liệu
-//         await chatRoom.save();
-//         // Tạo mới nhóm với thông tin từ yêu cầu và danh sách thành viên đã được cập nhật
-//         const newGroup = new Group({
-//             name,
-//             ownerId,
-//             members: updatedMembers,
-//             chatRoomId: chatRoom._id // Gán chat room ID cho nhóm
-//         });
-//         // Lưu nhóm mới vào cơ sở dữ liệu
-//         await newGroup.save();
+// Cấu hình AWS SDK với các thông tin cần thiết
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION
+});
 
-//         // Trả về phản hồi thành công, loại bỏ các trường "_id"
-//         res.status(201).json(apiCode.success(newGroup.toJSON({ getters: true }), 'Nhóm đã được tạo thành công'));
-//     } catch (error) {
-//         // Xử lý lỗi nếu có
-//         console.error('Lỗi khi tạo nhóm:', error);
-//         res.status(500).json(apiCode.error('Đã xảy ra lỗi khi tạo nhóm'));
-//     }
-// };
+const s3 = new AWS.S3();
+
+const uploadImageToS3 = async (imageData) => {
+  const params = {
+    Bucket: process.env.S3_BUCKET_NAME,
+    Key: `group_avatars/${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`, // Key là đường dẫn và tên file trên S3
+    Body: imageData.buffer,
+    ContentType: imageData.mimetype // Kiểu dữ liệu của hình ảnh
+  };
+
+  return new Promise((resolve, reject) => {
+    s3.upload(params, (err, data) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(data.Location); // Trả về URL của ảnh trên S3
+      }
+    });
+  });
+};
+
 const createGroup = async (req, res) => {
   try {
-    // Lấy ID của người đăng nhập từ JWT
+    
+    console.log("CAI QQ",req.body);
     const ownerId = req.user.id;
-    // Lấy tên của nhóm và danh sách thành viên từ body của yêu cầu
+    const photo=req.file;
     const { name, members } = req.body;
-    // Kiểm tra xem tên nhóm và danh sách thành viên có được cung cấp không
+    console.log("file nee",req.file);
     if (!name || !members || members.length < 2) {
-      return res
-        .status(400)
-        .json(apiCode.error("Tên nhóm và ít nhất hai thành viên là bắt buộc"));
+      return res.status(400).json({ error: "Tên nhóm và ít nhất hai thành viên là bắt buộc" });
     }
-    // Tìm tất cả các nhóm có số lượng thành viên và thành viên giống với nhóm mới
-    const existingGroups = await Group.find({
-      members: { $size: members.length },
-    });
-    // Kiểm tra xem có nhóm nào trùng với nhóm mới không
-    const duplicateGroup = existingGroups.find((existingGroup) => {
-      // So sánh danh sách thành viên của nhóm mới với các nhóm đã tồn tại
-      const sortedExistingMembers = existingGroup.members
-        .map((member) => member.userId && member.userId.toString())
-        .sort();
-      const sortedNewMembers = members
-        .map((member) => member.userId && member.userId.toString())
-        .sort();
+    
+    // Thực hiện upload ảnh lên S3 nếu có
+    let photoURL = '';
+    if (photo) {
+      photoURL = await uploadImageToS3(photo);
+    }
+ 
+    const existingGroups = await Group.find({ members: { $size: members.length } });
 
-      // Kiểm tra xem hai danh sách thành viên có giống nhau không
-      return (
-        JSON.stringify(sortedExistingMembers) ===
-        JSON.stringify(sortedNewMembers)
-      );
+    const duplicateGroup = existingGroups.find(existingGroup => {
+      const sortedExistingMembers = existingGroup.members.map(member => member.userId && member.userId.toString()).sort();
+      const sortedNewMembers = members.map(member => member.userId && member.userId.toString()).sort();
+      return JSON.stringify(sortedExistingMembers) === JSON.stringify(sortedNewMembers);
     });
+
     if (duplicateGroup) {
-      return res.status(400).json(apiCode.error("Nhóm đã tồn tại"));
+      return res.status(400).json({ error: "Nhóm đã tồn tại" });
     }
-    // Thêm ownerId vào danh sách thành viên nếu chưa tồn tại
-    const updatedMembers = members.map((member) => ({
+
+    const updatedMembers = members.map(member => ({
       _id: member._id,
       userId: member.userId,
       addByUserId: ownerId,
-      // Mặc định roles ban đầu là admin cho thành viên và owner cho người tạo
-      roles: member.userId === ownerId ? [Roles.OWNER] : [Roles.ADMIN],
+      roles: member.userId === ownerId ? [Roles.OWNER] : [Roles.MEMBER],
       addAt: Date.now(),
     }));
 
-    // Thêm người tạo nhóm vào danh sách thành viên với quyền là "owner"
     updatedMembers.push({
       _id: ownerId,
       userId: ownerId,
@@ -188,33 +159,23 @@ const createGroup = async (req, res) => {
       addAt: Date.now(),
     });
 
-    // Tạo mới chat room
     const chatRoom = new ChatRoom({});
-    // Lưu chat room vào cơ sở dữ liệu
     await chatRoom.save();
-    // Tạo mới nhóm với thông tin từ yêu cầu và danh sách thành viên đã được cập nhật
+
     const newGroup = new Group({
       name,
       ownerId,
       members: updatedMembers,
-      chatRoomId: chatRoom._id, // Gán chat room ID cho nhóm
+      chatRoomId: chatRoom._id,
+      photoURL // Thêm URL của ảnh vào đối tượng newGroup
     });
-    // Lưu nhóm mới vào cơ sở dữ liệu
+
     await newGroup.save();
 
-    // Trả về phản hồi thành công, loại bỏ các trường "_id"
-    res
-      .status(201)
-      .json(
-        apiCode.success(
-          newGroup.toJSON({ getters: true }),
-          "Nhóm đã được tạo thành công"
-        )
-      );
+    res.status(201).json({ message: "Nhóm đã được tạo thành công", group: newGroup });
   } catch (error) {
-    // Xử lý lỗi nếu có
     console.error("Lỗi khi tạo nhóm:", error);
-    res.status(500).json(apiCode.error("Đã xảy ra lỗi khi tạo nhóm"));
+    res.status(500).json({ error: "Đã xảy ra lỗi khi tạo nhóm" });
   }
 };
 
@@ -397,4 +358,5 @@ module.exports = {
   deleteMember,
   outGroup,
   deleteGroup,
+  uploadImageToS3
 };

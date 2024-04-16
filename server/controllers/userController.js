@@ -448,6 +448,32 @@ const getAllFriendRequest = async (req, res) => {
       .json({ message: "Đã xảy ra lỗi khi lấy danh sách yêu cầu kết bạn." });
   }
 }
+const getAllFriend = async (req, res) => {
+  // Kiểm tra xem req.user tồn tại và có thuộc tính _id không
+  const userId = req.user.id;
+  console.log(userId);
+
+  try {
+    // Lấy thông tin người dùng từ nguồn dữ liệu
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Người dùng không tồn tại." });
+    }
+
+    // Lấy danh sách lời mời kết bạn của người dùng
+    const friends = await User.find(
+      { _id: { $in: user.friends } },
+      {  _id: 1, username:1, photoURL:1 }
+    );
+
+    return res.status(200).json(friends);
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ message: "Đã xảy ra lỗi khi lấy danh sách yêu cầu kết bạn." });
+  }
+};
 
 const getUserByChatRoomId = async (req, res) => {
   const chatRoomId = req.params.chatRoomId;
@@ -525,5 +551,6 @@ module.exports = {
   getUserByChatRoomId, 
   getUserProfile,
   getUser,
-  getUsersByChatRoomId
+  getUsersByChatRoomId,
+  getAllFriend
 };
