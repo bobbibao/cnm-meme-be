@@ -5,7 +5,7 @@ const router = require("./routes");
 const cors = require('cors');
 const { default: mongoose, now } = require("mongoose");
 const {createMeeting} = require('./api');
-
+const {getUsersByChatRoomId} =  require('./controllers/userController');
 const User = require('./models/user');
 
 require("dotenv").config();
@@ -38,8 +38,8 @@ mongoose.connect(mongodb_connect_string)
       socket.on('setup', async (userId) => {
         try{
           userId = JSON.parse(userId);
-          // socket.join(userId);
           socket.userId = userId;
+          socket.join(userId);
           const user = await User.findById(userId);
           user.isOnline = true;
           await user.save();
@@ -52,27 +52,38 @@ mongoose.connect(mongodb_connect_string)
         userId = JSON.parse(userId);
         socket.join(room);
         socket.emit('join chat', room);
-        
+
       });
-     
-      socket.on('message', (message, id) => {
-        const newMessage = {
-          id: id,
-          senderId: JSON.parse(message.senderId),
-          content: message.content,
-          time: now().getHours() + ':' + now().getMinutes(),
-          type: message.type,
-          media: message.media,
+
+      socket.on('message', async (message, id) => {
+        try {
+          const parseUserId = JSON.parse(message.senderId)
+            const sender = await User.findById(parseUserId, 'displayName photoURL');
+
+            console.log(sender.displayName);
+            const newMessage = {
+                id: id,
+                senderId: parseUserId,
+                senderName: sender?.displayName,
+                avatarSender: sender?.photoURL,
+                content: message.content,
+                time: now().getHours() + ':' + now().getMinutes(),
+                type: message.type,
+                media: message.media,
+            };
+
+            // console.log('message', newMessage);
+            io.to(message.chatRoomId).emit('message', newMessage);
+        } catch (error) {
+            console.error('Error:', error);
         }
-        console.log('message', newMessage);
-        io.to(message.chatRoomId).emit('message', newMessage);
-      });
+    });
 
       socket.on('delete message', (message) => {
         console.log('delete message', message);
         io.to(message.chatRoomId).emit('delete message', message);
       });
-      
+
       socket.on('unsend message', (message) => {
         io.to(message.chatRoomId).emit('unsend message', {id: message.messageId});
       });
@@ -102,10 +113,25 @@ mongoose.connect(mongodb_connect_string)
         }
       });
 
-      socket.on('call', (data) => {
+      socket.on('call', (chatRoomId) => {
         createMeeting().then((meetingId) => {
-          io.to(data.chatRoomId).emit('call', meetingId);
+          io.to(chatRoomId).emit('call', meetingId);
         });
+      });
+      // if(!socket.meetingId){
+      //   createMeeting().then((meetingId) => {
+      //     socket.meetingId = meetingId;
+      //     console.log(meetingId)
+      //     io.to(room).emit('call', meetingId);
+      //   });
+      // }
+      
+      socket.on('notify', async (data) => {
+        console.log("Notification", data);
+        io.to(data.userId).emit('notify', data);
+        // const user = await getUsersByChatRoomId(data.chatRoomId);
+        // console.log(user);
+        // io.to(data.chatRoomId).emit('notify', data);
       });
     });
   })

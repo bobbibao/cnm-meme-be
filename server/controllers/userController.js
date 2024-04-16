@@ -454,6 +454,32 @@ const getAllFriendRequest = async (req, res) => {
       .json({ message: "Đã xảy ra lỗi khi lấy danh sách yêu cầu kết bạn." });
   }
 }
+const getAllFriend = async (req, res) => {
+  // Kiểm tra xem req.user tồn tại và có thuộc tính _id không
+  const userId = req.user.id;
+  console.log(userId);
+
+  try {
+    // Lấy thông tin người dùng từ nguồn dữ liệu
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Người dùng không tồn tại." });
+    }
+
+    // Lấy danh sách lời mời kết bạn của người dùng
+    const friends = await User.find(
+      { _id: { $in: user.friends } },
+      {  _id: 1, username:1, photoURL:1 }
+    );
+
+    return res.status(200).json(friends);
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ message: "Đã xảy ra lỗi khi lấy danh sách yêu cầu kết bạn." });
+  }
+};
 
 const getUserByChatRoomId = async (req, res) => {
   const chatRoomId = req.params.chatRoomId;
@@ -472,15 +498,25 @@ const getUserByChatRoomId = async (req, res) => {
   }
 };
 
-const getUserProfile = async (req, res) => {
+const getUsersByChatRoomId = async (chatRoomId) =>{
+  try {
+    const direct = await Direct.findOne({
+      chatRoomId: chatRoomId
+    });
+    console.log(direct);
+  } catch (err) {
+    console.error(err);
+  }
+}
+async function getUserProfile(req, res) {
   try {
     const username = req.params.username;
-    const user = await User.findOne({ username }, 'displayName email gender photoURL thumbnailURL dateOfBirth phoneNumber groupDetails')
+    const user = await User.findOne({ username }, 'displayName email gender photoURL thumbnailURL dateOfBirth phoneNumber groupDetails');
     // .populate('groups
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     const groupIds = await getGroupIdsByUserId(user._id);
     const groupIds2 = await getGroupIdsByUserId(req.user.id);
     a = groupIds2.map((value) => {
@@ -491,7 +527,7 @@ const getUserProfile = async (req, res) => {
     const userProfile = {
       _id: user._id,
       name: user.displayName,
-      email:user.email,
+      email: user.email,
       gender: user.gender,
       avatar: user.photoURL,
       thumbnailURL: user.thumbnailURL,
@@ -505,7 +541,7 @@ const getUserProfile = async (req, res) => {
     console.error('Error fetching user profile:', error);
     res.status(500).json({ message: 'Server error' });
   }
-};
+}
 module.exports = {
   registerUser,
   loginUser,
@@ -520,5 +556,7 @@ module.exports = {
   getAllFriendRequest,
   getUserByChatRoomId, 
   getUserProfile,
-  getUser
+  getUser,
+  getUsersByChatRoomId,
+  getAllFriend
 };
