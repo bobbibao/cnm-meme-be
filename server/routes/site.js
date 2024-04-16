@@ -12,13 +12,15 @@ const otpController = require("../controllers/otpController");
 const { getGroupDetail, getGroupDetails } = require('../controllers/groupDetailController');
 const { getDirect, getDirects, getInfoChatItem } = require('../controllers/directController');
 const { getChatRoom, getChatRoomByDirectId } = require('../controllers/chatRoomController');
-const { getGroup, getGroups, getGroupByGroupDetailId, getInfoGroupItem,createGroup,addMember } = require('../controllers/groupController');
+const { getGroup, getGroups, getGroupByGroupDetailId, getInfoGroupItem,createGroup,addMember, deleteMember, outGroup, deleteGroup } = require('../controllers/groupController');
 
 const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getProfile, updateAvatar,
-    searchUser, addFriend, acceptFriend, getAllFriendRequest, getUserProfile, getUserByChatRoomId, getUser}  = require('../controllers/userController');
+    searchUser, addFriend, acceptFriend, getAllFriendRequest, getUserProfile, getUserByChatRoomId, getUser,
+getAllFriend}  = require('../controllers/userController');
 
 const { getMessage, getMessages, searchMessages, unsentMessage, sendMessage, sendMedia, reactMessage,
     forwardMessage, hideMessage, deleteMessage } = require('../controllers/messageController');
+router.get('/getAllFriend', authenticateJWT, getAllFriend);
 
 //Group detail
 router.get('/groupDetail/:id', authenticateJWT, getGroupDetail);
@@ -29,9 +31,12 @@ router.get('/group/:id', authenticateJWT, getGroup);
 router.get('/groups/', authenticateJWT, getGroups);
 router.get('/groupByGroupDetailId/:groupDetailId', authenticateJWT, getGroupByGroupDetailId);
 router.get('/info-group-items', authenticateJWT, getInfoGroupItem);
+router.delete('/groups/:groupId/deleteMember', authenticateJWT, deleteMember);
+router.post('/groups/:groupId/outGroup', authenticateJWT, outGroup);
 
-router.post("/creategroup", authenticateJWT, createGroup);
+router.post("/creategroup", authenticateJWT,upload.single('photo'), createGroup);
 router.post("/groups/:groupId/addMember", authenticateJWT, addMember);
+router.post("/delete-group", authenticateJWT, deleteGroup);
 
 //Direct
 router.get('/direct/:id', authenticateJWT, getDirect);
