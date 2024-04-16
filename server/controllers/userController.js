@@ -41,7 +41,7 @@ const registerUser = async (req, res) => {
     if (!password || !displayName || !dateOfBirth)
       return res
         .status(400)
-        .json({ success: false, message: "Tất cả các trường là bắt buộc..." });
+        .json({ success: false, message: "Không để trống các trường" });
     // Kiểm tra định dạng của email
     if (!validator.isEmail(email))
       return res
@@ -97,16 +97,22 @@ const loginUser = async (req, res) => {
   const { email, password } = req.body;
   console.log(email, password);
   try {
+    // Kiểm tra xem email có hợp lệ không
+    const emailRegex = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json(
+        "Email không hợp lệ"
+      );
+    }
     // Tìm kiếm người dùng theo email
     let user = await User.findOne({ email });
     if (!user) return res.status(400).json("Không tìm thấy người dùng");
 
     // So sánh mật khẩu đã hash với mật khẩu nhập vào
-    console.log(password, user.password)
+    console.log(password, user.password);
     const isValidPassword = await bcrypt.compare(password, user.password);
     console.log(password, user.password, isValidPassword);
-    if (!isValidPassword)
-      return res.status(400).json("Email hoặc mật khẩu không hợp lệ...");
+    if (!isValidPassword) return res.status(400).json("Mật khẩu không hợp lệ");
 
     // Nếu mọi thứ hợp lệ, tạo token và gửi lại cho client
     const token = createToken(user);

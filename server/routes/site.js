@@ -19,6 +19,7 @@ const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getPr
 
 const { getMessage, getMessages, searchMessages, unsentMessage, sendMessage, sendMedia, reactMessage,
     forwardMessage, hideMessage, deleteMessage } = require('../controllers/messageController');
+const {sendResetPasswordOTP, verifyResetPasswordOTP, updatePassword} = require('../controllers/forgotPass');
 
 //Group detail
 router.get('/groupDetail/:id', authenticateJWT, getGroupDetail);
@@ -53,6 +54,9 @@ router.post("/users/send-otp", otpController.sendOTP);
 router.post("/users/forgot-password", forgotPassword);
 router.post("/users/reset-password/:id/:token", resetPassword);
 router.post("/users/verify", otpController.verifyOTP);
+router.post("/users/update-password", updatePassword);
+router.post("/users/send-reset-passwordOTP", sendResetPasswordOTP);
+router.post("/users/verify-reset-passwordOTP", verifyResetPasswordOTP);
 
 // profile management
 router.get("/profile", authenticateJWT, getProfile);

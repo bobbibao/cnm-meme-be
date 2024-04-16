@@ -15,6 +15,15 @@ exports.sendOTP = async (req, res) => {
       });
     }
 
+    // Kiểm tra xem email có hợp lệ không
+    const emailRegex = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Email không hợp lệ",
+      });
+    }
+
     const checkUserPresent = await User.findOne({ email });
     if (checkUserPresent) {
       return res.status(401).json({
@@ -54,7 +63,7 @@ exports.verifyOTP = async (req, res) => {
     if (!email || !otp) {
       return res.status(400).json({
         success: false,
-        message: "Email và OTP không được để trống",
+        message: "OTP không được để trống",
       });
     }
     //Find the most recent OTP for the email
@@ -62,7 +71,7 @@ exports.verifyOTP = async (req, res) => {
     if (response.length === 0 || otp !== response[0].otp) {
       return res.status(400).json({
         success: false,
-        message: "The OTP is not valid",
+        message: "Sai mã OTP",
       });
     }
     res.status(200).json({
