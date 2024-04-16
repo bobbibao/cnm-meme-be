@@ -41,7 +41,7 @@ const registerUser = async (req, res) => {
     if (!password || !displayName || !dateOfBirth)
       return res
         .status(400)
-        .json({ success: false, message: "Tất cả các trường là bắt buộc..." });
+        .json({ success: false, message: "Không để trống các trường" });
     // Kiểm tra định dạng của email
     if (!validator.isEmail(email))
       return res
@@ -97,16 +97,22 @@ const loginUser = async (req, res) => {
   const { email, password } = req.body;
   console.log(email, password);
   try {
+    // Kiểm tra xem email có hợp lệ không
+    const emailRegex = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json(
+        "Email không hợp lệ"
+      );
+    }
     // Tìm kiếm người dùng theo email
     let user = await User.findOne({ email });
     if (!user) return res.status(400).json("Không tìm thấy người dùng");
 
     // So sánh mật khẩu đã hash với mật khẩu nhập vào
-    console.log(password, user.password)
+    console.log(password, user.password);
     const isValidPassword = await bcrypt.compare(password, user.password);
     console.log(password, user.password, isValidPassword);
-    if (!isValidPassword)
-      return res.status(400).json("Email hoặc mật khẩu không hợp lệ...");
+    if (!isValidPassword) return res.status(400).json("Mật khẩu không hợp lệ");
 
     // Nếu mọi thứ hợp lệ, tạo token và gửi lại cho client
     const token = createToken(user);
@@ -450,6 +456,32 @@ const getAllFriendRequest = async (req, res) => {
       .json({ message: "Đã xảy ra lỗi khi lấy danh sách yêu cầu kết bạn." });
   }
 }
+const getAllFriend = async (req, res) => {
+  // Kiểm tra xem req.user tồn tại và có thuộc tính _id không
+  const userId = req.user.id;
+  console.log(userId);
+
+  try {
+    // Lấy thông tin người dùng từ nguồn dữ liệu
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Người dùng không tồn tại." });
+    }
+
+    // Lấy danh sách lời mời kết bạn của người dùng
+    const friends = await User.find(
+      { _id: { $in: user.friends } },
+      {  _id: 1, username:1, photoURL:1 }
+    );
+
+    return res.status(200).json(friends);
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ message: "Đã xảy ra lỗi khi lấy danh sách yêu cầu kết bạn." });
+  }
+};
 
 const getUserByChatRoomId = async (req, res) => {
   const chatRoomId = req.params.chatRoomId;
@@ -527,5 +559,6 @@ module.exports = {
   getUserByChatRoomId, 
   getUserProfile,
   getUser,
-  getUsersByChatRoomId
+  getUsersByChatRoomId,
+  getAllFriend
 };
