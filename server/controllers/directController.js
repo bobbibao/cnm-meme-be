@@ -89,7 +89,7 @@ const getInfoChatItem = async (req, res) => {
             }))
         ])
         // Kiểm tra xem các promise có lỗi không
-        if (directsResult.status === 'rejected' || groupsResult.status === 'rejected') {
+        if (directsResult.status === 'rejected' || groupsResult.status === 'rejected')
             console.log(directsResult.reason);
         for (let i = 0; i < directs.length; i++) {
             const direct = directs[i];
