@@ -8,6 +8,7 @@ const bcrypt = require("bcrypt");
 const validator = require("validator");
 const Direct = require('../models/Direct');
 const ChatRoom = require('../models/chatRoom');
+const Group = require('../models/group');
 const nodemailer = require("nodemailer");
 const {getGroupIdsByUserId} = require('./groupController');
 const Joi = require('joi');
@@ -368,12 +369,10 @@ const searchUser = async (req, res) => {
   }
 };
 const addFriend = async (req, res) => {
-  const friendId = req.body.friendId;
+  const friendId = req.body.userInfo._id;
   try {
     const user = await User.findById(req.user.id);
-    console.log(user);
     const friend = await User.findById(friendId);
-    console.log(friend);
     if (!friend) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -467,14 +466,9 @@ const getAllFriend = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "Người dùng không tồn tại." });
     }
-
-    // Lấy danh sách lời mời kết bạn của người dùng
-    const friends = await User.find(
-      { _id: { $in: user.friends } },
-      {  _id: 1, username:1, photoURL:1 }
-    );
-
-    return res.status(200).json(friends);
+    const friends = await User.find({ _id: { $in: user.friends } });
+    const friends2 = friends.filter((friend) => friend._id.toString() !== userId);
+    return res.status(200).json(friends2);
   } catch (error) {
     console.error(error);
     return res
@@ -487,6 +481,8 @@ const getUserByChatRoomId = async (req, res) => {
   const chatRoomId = req.params.chatRoomId;
   try {
     const owner = await User.findById(req.user.id);
+    const group = await Group.findOne({chatRoomId: chatRoomId}); 
+    if(group) return res.json(apiCode.success(group, 'Get Group Success'));
     owner.directs.forEach(async (directId) => {
       const direct = await Direct.findById(directId);
       if (direct.chatRoomId.toString()  === chatRoomId) {
@@ -494,8 +490,7 @@ const getUserByChatRoomId = async (req, res) => {
         return res.json(apiCode.success(user, 'Get User Success'));
       }
     });
-  }
-  catch (error) {
+  }catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
@@ -512,8 +507,8 @@ const getUsersByChatRoomId = async (chatRoomId) =>{
 }
 async function getUserProfile(req, res) {
   try {
-    const username = req.params.username;
-    const user = await User.findOne({ username }, 'displayName email gender photoURL thumbnailURL dateOfBirth phoneNumber groupDetails');
+    const id = req.params.id;
+    const user = await User.findById(id);
     // .populate('groups
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -544,6 +539,31 @@ async function getUserProfile(req, res) {
     res.status(500).json({ message: 'Server error' });
   }
 }
+const getUserNotInGroup = async (req, res) => {
+  const groupId = req.params.groupId;
+  const userId = req.user.id;
+  const user = await User.findById(userId);
+  const users = await User.find({ _id: { $in: user.friends } });
+  
+  Group.findById(groupId)
+    .then((group) => {
+      if (!group) {
+        return res.status(404).json({ message: 'Group not found' });
+      }
+      const memberIds = group.members.map((member) => member.userId.toString());
+      console.log(memberIds);
+      const usersNotInGroup = users.filter((user) => !memberIds.includes(user._id.toString()));
+      usersNotInGroup.forEach((user) => {
+        console.log(user._id);
+      });
+      return res.status(200).json(usersNotInGroup);
+    })
+    .catch((err) => {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
+    });
+}
+
 module.exports = {
   registerUser,
   loginUser,
@@ -560,5 +580,6 @@ module.exports = {
   getUserProfile,
   getUser,
   getUsersByChatRoomId,
-  getAllFriend
+  getAllFriend,
+  getUserNotInGroup
 };

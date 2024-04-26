@@ -90,6 +90,25 @@ const getMessages = async (req, res) => {
   }
 };
 
+// const getMessages = async (req, res) => {
+//   try {
+//     const chatRoomId = req.params.chatRoomId;
+//     const chatRoom = await ChatRoom.findById(chatRoomId);
+//     const messages = await Message.find({ _id: { $in: chatRoom.messages } });
+//     let sent = true;
+//     const messageList = messages.map(message => {
+//       return {
+//         id: message._id,
+//         content: message.content,
+//         sent: sent = !sent,
+//         time: message.createAt.getHours() + ':' + (message.createAt.getMinutes() < 10 ? '0' + message.createAt.getMinutes() : message.createAt.getMinutes())
+//       }
+//     });
+//     return res.status(200).json(apiCode.success(messageList, 'Get Messages Success'));
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
 const searchMessages = async (req, res) => {
   const chatRoomId = req.params.chatRoomId;
   const keyword = req.query._q;
@@ -100,7 +119,6 @@ const searchMessages = async (req, res) => {
       index: messages.indexOf(message),
       id: message._id,
       content: message.content,
-      sent: req.user.id === message.senderID.toString(),
       time: message.createAt.getHours() + ':' + (message.createAt.getMinutes() < 10 ? '0' + message.createAt.getMinutes() : message.createAt.getMinutes())
     }
   });

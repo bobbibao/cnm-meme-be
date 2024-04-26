@@ -24,8 +24,8 @@ app.use(router);
 // Khởi chạy app
 mongoose.connect(mongodb_connect_string)
   .then(() => {
-    const server = app.listen(port, () =>
-      console.log("> Server is up and running on port : http://localhost:" + port)
+    const server = app.listen(3000, () =>
+      console.log("> Server is up and running on port : http://localhost:" + 3000)
     );
     const io = require('socket.io')(server, {
       pingTimeout: 60000,
