@@ -14,7 +14,7 @@ const { getDirect, getDirects, getInfoChatItem } = require('../controllers/direc
 const { getChatRoom, getChatRoomByDirectId } = require('../controllers/chatRoomController');
 const { getGroup, getGroups, getGroupByGroupDetailId, getInfoGroupItem,createGroup,addMember, deleteMember, outGroup, deleteGroup, getProfileGroup } = require('../controllers/groupController');
 
-const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getProfile, updateAvatar,
+const {registerUser, loginUser, resetPassword,changePassword, forgotPassword, updateUser, getProfile, updateAvatar,
     searchUser, addFriend, acceptFriend, getAllFriendRequest, getUserProfile, getUserByChatRoomId, getUser,
 getAllFriend, getUserNotInGroup}  = require('../controllers/userController');
 
@@ -62,6 +62,7 @@ router.post("/users/verify", otpController.verifyOTP);
 router.post("/users/update-password", updatePassword);
 router.post("/users/send-reset-passwordOTP", sendResetPasswordOTP);
 router.post("/users/verify-reset-passwordOTP", verifyResetPasswordOTP);
+router.post("/user/change-password",authenticateJWT, changePassword);
 
 // profile management
 router.get("/profile", authenticateJWT, getProfile);

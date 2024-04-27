@@ -125,6 +125,50 @@ const loginUser = async (req, res) => {
     return res.status(500).json(error);
   }
 };
+const changePassword = async (req, res) => {
+  // Kiểm tra xem token JWT đã được gửi kèm theo yêu cầu không
+
+    // Giải mã token JWT để lấy thông tin người dùng
+    const userId = req.user.id;
+    console.log('====================================');
+    console.log(userId);
+    console.log('====================================');
+    // Lấy thông tin người dùng từ cơ sở dữ liệu
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(400).json({ success: false, message: "Người dùng không tồn tại" });
+    }
+
+    // Lấy mật khẩu hiện tại từ yêu cầu
+    const { currentPassword, newPassword } = req.body;
+    console.log('====================================');
+    console.log('====================================');
+    // So sánh mật khẩu hiện tại đã hash với mật khẩu hiện tại nhập vào
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!isValidPassword) {
+      return res.status(400).json({ success: false, message: "Mật khẩu hiện tại không chính xác" });
+    }
+
+    // Kiểm tra xem mật khẩu mới có trùng với mật khẩu cũ không
+    const isSameAsCurrent = await bcrypt.compare(newPassword, user.password);
+    if (isSameAsCurrent) {
+      return res.status(400).json({ success: false, message: "Mật khẩu mới phải khác mật khẩu cũ" });
+    }
+    if (!validator.isStrongPassword(newPassword))
+      return res
+        .status(400)
+        .json({ success: false, message: "Mật khẩu phải mạnh..." });
+    // Hash mật khẩu mới
+    const salt = await bcrypt.genSalt(10);
+    const hashedNewPassword = await bcrypt.hash(newPassword, salt);
+
+    // Cập nhật mật khẩu mới vào cơ sở dữ liệu
+    user.password = hashedNewPassword;
+    await user.save();
+
+    return res.status(200).json({ success: true, message: "Mật khẩu đã được thay đổi thành công" });
+
+};
 const resetPassword = async (req, res) => {
   const id = req.params["id"];
   const token = req.params["token"];
@@ -581,5 +625,6 @@ module.exports = {
   getUser,
   getUsersByChatRoomId,
   getAllFriend,
-  getUserNotInGroup
+  getUserNotInGroup,
+  changePassword
 };
