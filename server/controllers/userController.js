@@ -12,6 +12,7 @@ const Group = require('../models/group');
 const nodemailer = require("nodemailer");
 const {getGroupIdsByUserId} = require('./groupController');
 const Joi = require('joi');
+const Message = require("../models/message");
 
 const app = express();
 app.use(bodyParser.json());
@@ -412,6 +413,107 @@ const searchUser = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+const searchMessage = async (req, res) => {
+  const searchTerm = req.body.searchTerm;
+  try {
+    // Check if req.user exists and contains the necessary details
+  
+    // Retrieve directs from the user object
+    const currentUser = await User.findById(req.user.id);
+    if (!currentUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const directs = currentUser.directs;
+    console.log('Directs:', directs); 
+    // Initialize an array to store chat items
+    let chatItems = [];
+
+    // Iterate over directs
+    for (const directId of directs) {
+      // Find the corresponding direct
+      const direct = await Direct.findById(directId);
+
+      // If direct exists
+      if (direct) {
+        // Find the corresponding chat room for the direct
+        const chatRoom = await ChatRoom.findById(direct.chatRoomId);
+
+        // If chat room exists
+        if (chatRoom) {
+          // Iterate over messages in the chat room
+          for (const messageId of chatRoom.messages) {
+            // Find the message
+            const message = await Message.findById(messageId);
+
+            // If message contains the searchTerm
+            if (message && message.content.includes(searchTerm)) {
+              // Find the sender's details
+              const sender = await User.findById(message.senderID);
+
+              // If sender exists
+              if (sender) {
+                // Add chat item to the list
+                chatItems.push({
+                  displayName: sender.displayName,
+                  photoURL: sender.photoURL,
+                  context: message.content
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Return the chat items containing the searchTerm
+    return res.status(200).json({ chatItems });
+  } catch (error) {
+    console.error('Error searching messages:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+
+const searchUserName = async (req, res) => {
+  const searchTerm = req.body.searchTerm;
+  try {
+    // Find the currently logged-in user
+    const currentUser = await User.findById(req.user.id);
+    if (!currentUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Find the friends of the currently logged-in user whose displayName matches the searchTerm
+    const users = await User.find({ 
+      _id: { $in: currentUser.friends }, // Search within the list of friends
+      displayName: { $regex: searchTerm, $options: 'i' } 
+    });
+
+    // Iterate through each user to find their last message
+    const usersWithLastMessage = await Promise.all(users.map(async (user) => {
+      // Find the last message sent by this user
+      const lastMessage = await Message.findOne({ senderID: user._id })
+        .sort({ createdAt: -1 }) // Sort messages by createdAt in descending order to get the last message
+        .limit(1);
+
+      return {
+        _id: user._id,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        lastMessage: lastMessage ? lastMessage.content : null // If there's a last message, get its content, otherwise, set to null
+      };
+    }));
+
+    // Return the users with their last messages
+    return res.status(200).json({ users: usersWithLastMessage });
+  } catch (error) {
+    console.error('Error searching users by name:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
 const addFriend = async (req, res) => {
   const friendId = req.body.userInfo._id;
   try {
@@ -626,5 +728,7 @@ module.exports = {
   getUsersByChatRoomId,
   getAllFriend,
   getUserNotInGroup,
-  changePassword
+  changePassword,
+  searchMessage,
+  searchUserName
 };
