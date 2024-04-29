@@ -42,7 +42,7 @@ router.get('/groupByGroupDetailId/:groupDetailId', authenticateJWT, getGroupByGr
 router.get('/info-group-items', authenticateJWT, getInfoGroupItem);
 router.post('/groups/:chatRoomId/delete-member', authenticateJWT, deleteMember);
 router.post("/groups/:chatRoomId/outGroup", authenticateJWT, outGroup);
-
+router.delete("/delete-group/:groupId", authenticateJWT, deleteGroup);
 router.post("/creategroup", authenticateJWT,upload.single('photo'), createGroup);
 // router.post("/groups/:groupId/addMember", authenticateJWT, addMember);
 router.post("/groups/:chatRoomId/add-member", authenticateJWT, addMember);

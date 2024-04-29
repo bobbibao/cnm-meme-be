@@ -469,42 +469,107 @@ const outGroup = async (req, res) => {
   }
 };
 
+
 const deleteGroup = async (req, res) => {
   try {
     // Lấy ID của người đăng nhập từ JWT
     const userId = req.user.id;
-    // Lấy ID của nhóm từ body của yêu cầu
-    const groupId = req.body.id;
-    // Tìm nhóm dựa trên ID nhóm
+    // Lấy ID của nhóm từ yêu cầu
+    const groupId = req.params.groupId;
+
+    // Tìm nhóm trong cơ sở dữ liệu
     const group = await Group.findById(groupId);
+
     // Kiểm tra xem nhóm có tồn tại không
     if (!group) {
-      return res.status(404).json(apiCode.error("Nhóm không tồn tại"));
+      return res.status(404).json({ error: "Không tìm thấy nhóm" });
     }
+
     // Kiểm tra xem người dùng có quyền "owner" trong nhóm không
     const isOwner = group.members.some(
       (member) =>
         member.userId &&
         member.roles &&
         member.userId.toString() === userId &&
-        member.roles.includes(Roles.OWNER)
+        member.roles.includes("owner")
     );
+
     // Nếu người dùng không phải là "owner", trả về lỗi
     if (!isOwner) {
-      return res
-        .status(403)
-        .json(apiCode.error("Bạn không có quyền xóa nhóm này"));
+      return res.status(403).json({ error: "Bạn không có quyền xóa nhóm này" });
     }
-    // Xóa nhóm
-    await Group.findByIdAndDelete(groupId);
-    // Trả về phản hồi thành công
-    res.status(200).json(apiCode.success(null, "Nhóm đã được xóa thành công"));
+
+    // Lưu chatRoomId vào một biến
+    const chatRoomId = group.chatRoomId;
+
+    // Tìm ChatRoom tương ứng trong cơ sở dữ liệu
+    const chatRoom = await ChatRoom.findById(chatRoomId);
+
+    // Duyệt qua mỗi message trong ChatRoom
+    for (let i = 0; i < chatRoom.messages.length; i++) {
+      const messageId = chatRoom.messages[i];
+
+      // Xóa Message tương ứng từ cơ sở dữ liệu
+      await Message.deleteOne({ _id: messageId });
+    }
+
+    // Xóa ChatRoom tương ứng từ cơ sở dữ liệu
+    await ChatRoom.deleteOne({ _id: chatRoomId });
+
+    // Tìm GroupDetail tương ứng với groupId
+    const groupDetail = await GroupDetail.findOne({ groupId: groupId });
+
+    // Kiểm tra xem GroupDetail có tồn tại không
+    if (!groupDetail) {
+      return res.status(404).json({ error: "Không tìm thấy GroupDetail" });
+    }
+
+    // Lấy idGroupDetails từ GroupDetail
+    const idGroupDetails = groupDetail._id;
+
+    // Duyệt qua mỗi thành viên trong nhóm
+    for (let i = 0; i < group.members.length; i++) {
+      const memberId = group.members[i].userId;
+      try {
+        // Tìm kiếm thông tin người dùng bằng ID
+        const user = await User.findById(memberId);
+
+        // Kiểm tra xem user có tồn tại không
+        if (user) {
+          // Nếu user tồn tại, xóa idGroupDetails khỏi field groupDetails của user
+          user.groupDetails = user.groupDetails.filter(
+            (groupDetail) =>
+              groupDetail.toString() !== idGroupDetails.toString()
+          );
+
+          // Lưu lại thông tin người dùng sau khi cập nhật
+          await user.save();
+        } else {
+          // Xử lý trường hợp user không tồn tại
+          console.error(`User with ID ${memberId} not found`);
+        }
+      } catch (error) {
+        // Xử lý lỗi nếu có
+        console.error(`Error updating user with ID ${memberId}:`, error);
+      }
+    }
+
+    // Xóa chi tiết nhóm tương ứng với nhóm đã xóa
+    await GroupDetail.deleteMany({ groupId: groupId });
+
+    // Xóa nhóm khỏi cơ sở dữ liệu
+    await Group.deleteOne({ _id: groupId });
+
+    // Trả về thông báo thành công
+    res
+      .status(200)
+      .json({ success: true, message: "Nhóm đã được xóa thành công" });
   } catch (error) {
-    // Xử lý lỗi nếu có
     console.error("Lỗi khi xóa nhóm:", error);
-    res.status(500).json(apiCode.error("Đã xảy ra lỗi khi xóa nhóm"));
+    res.status(500).json({ error: "Đã xảy ra lỗi khi xóa nhóm" });
   }
 };
+
 
 const getProfileGroup = async (req, res) => {
   try {
