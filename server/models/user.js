@@ -7,73 +7,78 @@ const UserSchema = new Schema({
   email: String,
   phoneNumber: {
     type: String,
-    default: ''
+    default: "",
   },
   displayName: {
     type: String,
-    default: 'anonymous'
+    default: "anonymous",
   },
   gender: String,
   dateOfBirth: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   photoURL: {
     type: String,
-    default: ''
+    default: "",
   },
   thumbnailURL: {
     type: String,
-    default: ''
+    default: "",
   },
   theme: {
     type: String,
-    default: 'light'
+    default: "light",
   },
   isOnline: {
-      type: Boolean,
-      default: true
+    type: Boolean,
+    default: true,
   },
   lastOnlineTime: {
-      type: Date,
-      default: Date.now
+    type: Date,
+    default: Date.now,
   },
   enable: {
     type: Boolean,
-    default: true
+    default: true,
   },
   verificationCode: {
     type: String,
-    default: ''
+    default: "",
   },
   createAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   updateAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   friends: {
     type: [Schema.Types.ObjectId],
-    default: []
+    default: [],
   },
   friendsRequest: {
     type: [Schema.Types.ObjectId],
-    default: []
+    default: [],
   },
+  requestsSent: {
+    type: [Schema.Types.ObjectId],
+    default: [],
+  },
+
   blockedUsers: {
     type: [Schema.Types.ObjectId],
-    default: []
+    default: [],
   },
   directs: {
     type: [Schema.Types.ObjectId],
-    default: []
+    default: [],
   },
   groupDetails: {
     type: [Schema.Types.ObjectId],
-    default: []
-  }
+    default: [],
+  },
 });
 
 // UserSchema.methods.getDirects = () => {

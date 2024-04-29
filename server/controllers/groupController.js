@@ -379,37 +379,93 @@ const deleteMember = async (req, res) => {
 const outGroup = async (req, res) => {
   try {
     const userId = req.user.id;
-    const groupId = req.params.groupId;
-    const group = await Group.findById(groupId);
+    const user = await User.findById(userId);
+    const chatRoomId = req.params.chatRoomId;
+    const group = await Group.findOne({ chatRoomId: chatRoomId });
+
     if (!group) {
       return res.status(404).json({ error: "Không tìm thấy nhóm" });
     }
 
-    const memberIndex = group.members.findIndex(
+    // Kiểm tra số lượng thành viên của nhóm
+    if (group.members.length < 3) {
+      return res
+        .status(400)
+        .json({ error: "Nhóm phải có trên hoặc bằng 3 thành viên" });
+    }
+
+    // Xử lý nếu người dùng là chủ nhóm
+    const members = group.members;
+
+    // Tìm vị trí của thành viên cần rời khỏi nhóm
+    const memberIndex = members.findIndex(
       (member) => member.userId.toString() === userId
     );
+
+    // Nếu không tìm thấy thành viên trong nhóm
     if (memberIndex === -1) {
       return res
         .status(404)
         .json({ error: "Không tìm thấy thành viên trong nhóm" });
     }
-
-    // Kiểm tra xem nhóm chỉ còn một thành viên hay không
-    if (group.members.length === 1) {
-      return res
-        .status(403)
-        .json({
-          error:
-            "Bạn không thể rời khỏi nhóm vì bạn là người dùng cuối cùng trong nhóm",
-        });
+    if (memberIndex === 0) {
+      return res.status(400).json({ error: "Không thể rời khỏi nhóm" });
     }
 
+    // Xóa thành viên ra khỏi nhóm
+    members.splice(memberIndex, 1);
+
+    // Nếu người rời khỏi nhóm là chủ nhóm, chọn thành viên mới làm chủ nhóm dựa trên thời gian thêm vào và quyền admin
+    if (group.ownerId.toString() === userId) {
+      // Lọc danh sách các thành viên có quyền admin
+      const adminMembers = members.filter((member) =>
+        member.roles.includes(Roles.ADMIN)
+      );
+
+      if (adminMembers.length > 0) {
+        // Sắp xếp danh sách các thành viên có quyền admin theo thời gian thêm vào (tăng dần)
+        adminMembers.sort((a, b) => a.addAt - b.addAt);
+
+        // Chọn thành viên có quyền admin và thời gian thêm vào lớn nhất (trễ nhất) làm chủ nhóm mới
+        const newAdminOwner = adminMembers[0];
+        group.ownerId = newAdminOwner.userId;
+        //cập nhật lại roles cho owner mới và xóa quyền admin cũ
+        newAdminOwner.roles = [Roles.OWNER];
+      } else {
+        // Nếu không có thành viên nào có quyền admin, chọn thành viên cuối cùng trong danh sách làm chủ nhóm mới
+        const memberInGroup = members.filter((member) =>
+          member.roles.includes(Roles.MEMBER)
+        );
+        memberInGroup.sort((a, b) => a.addAt - b.addAt);
+         const newOwner = members[0];
+        group.ownerId = newOwner.userId;
+        //cập nhật lại roles cho owner mới và xóa quyền admin cũ
+        newOwner.roles = [Roles.OWNER];
+      }
+    }
+
+    // Cập nhật lại danh sách thành viên của nhóm
     group.members.splice(memberIndex, 1);
+    const groupDetail = await GroupDetail.findOne({
+      groupId: group._id,
+      _id: { $in: user.groupDetails },
+    });
+    const groupDetailId = groupDetail._id;
+    user.groupDetails = user.groupDetails.filter(
+      (groupDetail) => groupDetail.toString() !== groupDetailId.toString()
+    );
     await group.save();
-    res.status(200).json({ success: true, message: "Bạn đã rời khỏi nhóm" });
+    await user.save();
+
+    // Trả về thông báo thành công
+    return res
+      .status(200)
+      .json({ success: true, message: "Bạn đã rời khỏi nhóm" });
   } catch (error) {
-    console.error("Lỗi khi rời khỏi nhóm:", error);
-    res.status(500).json({ error: "Đã xảy ra lỗi khi rời khỏi nhóm" });
+    console.error(error);
+    res
+      .status(500)
+      .json({ error: "Đã xảy ra lỗi trong quá trình xử lý yêu cầu" });
   }
 };
 
@@ -495,5 +551,5 @@ module.exports = {
   outGroup,
   deleteGroup,
   uploadImageToS3,
-  getProfileGroup
+  getProfileGroup,
 };
