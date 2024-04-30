@@ -8,6 +8,7 @@ const bcrypt = require("bcrypt");
 const validator = require("validator");
 const Direct = require('../models/Direct');
 const ChatRoom = require('../models/chatRoom');
+const Group = require('../models/group');
 const nodemailer = require("nodemailer");
 const {getGroupIdsByUserId} = require('./groupController');
 const Joi = require('joi');
@@ -41,7 +42,7 @@ const registerUser = async (req, res) => {
     if (!password || !displayName || !dateOfBirth)
       return res
         .status(400)
-        .json({ success: false, message: "Tất cả các trường là bắt buộc..." });
+        .json({ success: false, message: "Không để trống các trường" });
     // Kiểm tra định dạng của email
     if (!validator.isEmail(email))
       return res
@@ -97,16 +98,22 @@ const loginUser = async (req, res) => {
   const { email, password } = req.body;
   console.log(email, password);
   try {
+    // Kiểm tra xem email có hợp lệ không
+    const emailRegex = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json(
+        "Email không hợp lệ"
+      );
+    }
     // Tìm kiếm người dùng theo email
     let user = await User.findOne({ email });
     if (!user) return res.status(400).json("Không tìm thấy người dùng");
 
     // So sánh mật khẩu đã hash với mật khẩu nhập vào
-    console.log(password, user.password)
+    console.log(password, user.password);
     const isValidPassword = await bcrypt.compare(password, user.password);
     console.log(password, user.password, isValidPassword);
-    if (!isValidPassword)
-      return res.status(400).json("Email hoặc mật khẩu không hợp lệ...");
+    if (!isValidPassword) return res.status(400).json("Mật khẩu không hợp lệ");
 
     // Nếu mọi thứ hợp lệ, tạo token và gửi lại cho client
     const token = createToken(user);
@@ -361,24 +368,28 @@ const searchUser = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 const addFriend = async (req, res) => {
-  const friendId = req.body.friendId;
+  const friendId = req.body.userInfo._id;
   try {
     const user = await User.findById(req.user.id);
     const friend = await User.findById(friendId);
+    console.log(friend);
     if (!friend) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
     if (user.friends.includes(friendId)) {
-      return res.status(400).json({ message: 'User is already your friend' });
+      return res.status(400).json({ message: "User is already your friend" });
     }
-    if(friend.friendsRequest.includes(user._id)){
-      return res.status(400).json({ message: 'Friend request already sent' });
+    if (friend.friendsRequest.includes(user._id)) {
+      return res.status(400).json({ message: "Friend request already sent" });
     }
     friend.friendsRequest.push(user._id);
+    user.requestsSent.push(friendId);
     await friend.save();
-    res.status(200).json(apiCode.success({}, 'Add Friend Success'));
-  }catch (error) {
+    await user.save();
+    res.status(200).json(apiCode.success({}, "Add Friend Success"));
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
@@ -421,6 +432,63 @@ const acceptFriend = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+//thu hồi lời mời đã gửi
+const cancelFriendRequest = async (req, res) => {
+  const friendId = req.body.friendId;
+  try {
+    const user = await User.findById(req.user.id);
+    const friend = await User.findById(friendId);
+    console.log(user);
+    console.log(friend);
+    if (!friend) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (!user.requestsSent.includes(friendId)) {
+      return res.status(400).json({ message: "No friend request found" });
+    }
+    user.requestsSent = user.requestsSent.filter(
+      (id) => id.toString() !== friendId.toString()
+    );
+    friend.friendsRequest = friend.friendsRequest.filter(
+      (id) => id.toString() !== user._id.toString()
+    );
+    await user.save();
+    await friend.save();
+    res.status(200).json(apiCode.success({}, "Cancel Friend Request Success"));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+const getAllCancelFriendRequest = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Người dùng không  tồn tại." });
+    }
+    const requestSent = await Promise.all(
+      user.requestsSent.map(async (friendId) => {
+        const friend = await User.findById(friendId);
+        return {
+          _id: friend._id,
+          name: friend.displayName,
+          email: friend.email,
+          phone: friend.phoneNumber,
+          avatar: friend.photoURL,
+        };
+      })
+    );
+    console.log(requestSent);
+    return res
+      .status(200)
+      .json(
+        apiCode.success(requestSent, "Get All Cancel Friend Request Success")
+      );
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
 const getAllFriendRequest = async (req, res) => {
   const userId = req.user.id;
   try {
@@ -459,14 +527,9 @@ const getAllFriend = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "Người dùng không tồn tại." });
     }
-
-    // Lấy danh sách lời mời kết bạn của người dùng
-    const friends = await User.find(
-      { _id: { $in: user.friends } },
-      {  _id: 1, username:1, photoURL:1 }
-    );
-
-    return res.status(200).json(friends);
+    const friends = await User.find({ _id: { $in: user.friends } });
+    const friends2 = friends.filter((friend) => friend._id.toString() !== userId);
+    return res.status(200).json(friends2);
   } catch (error) {
     console.error(error);
     return res
@@ -479,6 +542,8 @@ const getUserByChatRoomId = async (req, res) => {
   const chatRoomId = req.params.chatRoomId;
   try {
     const owner = await User.findById(req.user.id);
+    const group = await Group.findOne({chatRoomId: chatRoomId}); 
+    if(group) return res.json(apiCode.success(group, 'Get Group Success'));
     owner.directs.forEach(async (directId) => {
       const direct = await Direct.findById(directId);
       if (direct.chatRoomId.toString()  === chatRoomId) {
@@ -486,8 +551,7 @@ const getUserByChatRoomId = async (req, res) => {
         return res.json(apiCode.success(user, 'Get User Success'));
       }
     });
-  }
-  catch (error) {
+  }catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
@@ -504,8 +568,8 @@ const getUsersByChatRoomId = async (chatRoomId) =>{
 }
 async function getUserProfile(req, res) {
   try {
-    const username = req.params.username;
-    const user = await User.findOne({ username }, 'displayName email gender photoURL thumbnailURL dateOfBirth phoneNumber groupDetails');
+    const id = req.params.id;
+    const user = await User.findById(id);
     // .populate('groups
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -536,6 +600,31 @@ async function getUserProfile(req, res) {
     res.status(500).json({ message: 'Server error' });
   }
 }
+const getUserNotInGroup = async (req, res) => {
+  const groupId = req.params.groupId;
+  const userId = req.user.id;
+  const user = await User.findById(userId);
+  const users = await User.find({ _id: { $in: user.friends } });
+  
+  Group.findById(groupId)
+    .then((group) => {
+      if (!group) {
+        return res.status(404).json({ message: 'Group not found' });
+      }
+      const memberIds = group.members.map((member) => member.userId.toString());
+      console.log(memberIds);
+      const usersNotInGroup = users.filter((user) => !memberIds.includes(user._id.toString()));
+      usersNotInGroup.forEach((user) => {
+        console.log(user._id);
+      });
+      return res.status(200).json(usersNotInGroup);
+    })
+    .catch((err) => {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
+    });
+}
+
 module.exports = {
   registerUser,
   loginUser,
@@ -552,5 +641,8 @@ module.exports = {
   getUserProfile,
   getUser,
   getUsersByChatRoomId,
-  getAllFriend
+  getAllFriend,
+  getUserNotInGroup,
+  getAllCancelFriendRequest,
+  cancelFriendRequest
 };

@@ -16,11 +16,20 @@ const { getGroup, getGroups, getGroupByGroupDetailId, getInfoGroupItem,createGro
 
 const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getProfile, updateAvatar,
     searchUser, addFriend, acceptFriend, getAllFriendRequest, getUserProfile, getUserByChatRoomId, getUser,
-getAllFriend}  = require('../controllers/userController');
+getAllFriend, getUserNotInGroup, cancelFriendRequest, getAllCancelFriendRequest}  = require('../controllers/userController');
 
 const { getMessage, getMessages, searchMessages, unsentMessage, sendMessage, sendMedia, reactMessage,
     forwardMessage, hideMessage, deleteMessage } = require('../controllers/messageController');
+const {sendResetPasswordOTP, verifyResetPasswordOTP, updatePassword} = require('../controllers/forgotPass');
+
 router.get('/getAllFriend', authenticateJWT, getAllFriend);
+router.get(
+  "/getAllCancelFriendRequest",
+  authenticateJWT,
+  getAllCancelFriendRequest
+);
+router.post("/cancel-friend-request", authenticateJWT, cancelFriendRequest);
+
 
 //Group detail
 router.get('/groupDetail/:id', authenticateJWT, getGroupDetail);
@@ -31,15 +40,17 @@ router.get('/group/:id', authenticateJWT, getGroup);
 router.get('/groups/', authenticateJWT, getGroups);
 router.get('/groupByGroupDetailId/:groupDetailId', authenticateJWT, getGroupByGroupDetailId);
 router.get('/info-group-items', authenticateJWT, getInfoGroupItem);
-router.delete('/groups/:groupId/deleteMember', authenticateJWT, deleteMember);
-router.post('/groups/:groupId/outGroup', authenticateJWT, outGroup);
-
+router.post('/groups/:chatRoomId/delete-member', authenticateJWT, deleteMember);
+router.post("/groups/:chatRoomId/outGroup", authenticateJWT, outGroup);
+router.delete("/delete-group/:groupId", authenticateJWT, deleteGroup);
 router.post("/creategroup", authenticateJWT,upload.single('photo'), createGroup);
-router.post("/groups/:groupId/addMember", authenticateJWT, addMember);
+// router.post("/groups/:groupId/addMember", authenticateJWT, addMember);
+router.post("/groups/:chatRoomId/add-member", authenticateJWT, addMember);
 router.post("/delete-group", authenticateJWT, deleteGroup);
 router.post("/grant-permission", authenticateJWT, grantPermissionMember);
 
 
+router.get("/profile-group/:groupId", authenticateJWT, getProfileGroup);
 //Direct
 router.get('/direct/:id', authenticateJWT, getDirect);
 router.get('/directs/', authenticateJWT, getDirects);
@@ -57,22 +68,26 @@ router.post("/users/send-otp", otpController.sendOTP);
 router.post("/users/forgot-password", forgotPassword);
 router.post("/users/reset-password/:id/:token", resetPassword);
 router.post("/users/verify", otpController.verifyOTP);
+router.post("/users/update-password", updatePassword);
+router.post("/users/send-reset-passwordOTP", sendResetPasswordOTP);
+router.post("/users/verify-reset-passwordOTP", verifyResetPasswordOTP);
 
 // profile management
 router.get("/profile", authenticateJWT, getProfile);
 router.post("/profile", authenticateJWT, updateUser);
-router.get("/profile/:username", authenticateJWT, getUserProfile);
+router.get("/profile/:id", authenticateJWT, getUserProfile);
 router.post("/profile/avatar", authenticateJWT, updateAvatar);
 router.post('/add-friend', authenticateJWT, addFriend);
 router.post('/accept-friend', authenticateJWT, acceptFriend);
 router.get("/getAllFriendRequest", authenticateJWT, getAllFriendRequest);
 router.post('/search-user', authenticateJWT, searchUser);
 router.get('/info-user/:chatRoomId', authenticateJWT, getUserByChatRoomId);
-
+router.get('/info-add-member/:groupId', authenticateJWT, getUserNotInGroup);
 //Message
 router.get('/message/:id', authenticateJWT, getMessage);
+router.post('/messages/:chatRoomId', authenticateJWT, sendMessage);
 router.get('/messages/:chatRoomId', authenticateJWT, getMessages);
-router.post('/search-messages', authenticateJWT, searchMessages);
+router.get('/messages/:chatRoomId/search', searchMessages);
 router.post('/send-message/', authenticateJWT, sendMessage);
 router.post('/send-media/', authenticateJWT, upload.array('media'), sendMedia);
 router.patch('/unsent-message/:id', authenticateJWT, unsentMessage);
