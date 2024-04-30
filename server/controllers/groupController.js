@@ -302,8 +302,61 @@ const deleteMember = async(req,res)=>{
         console.error('Lỗi khi xóa thành viên khỏi nhóm:', error);
         res.status(500).json({ error: 'Đã xảy ra lỗi khi xóa thành viên khỏi nhóm' });
     }
-
 }
+
+const grantPermissionMember = async (req, res)=> {
+    try {
+      const reqUser = req.user.id;
+      const userGrantId = req.body.userId;
+      const groupId = req.body.groupId;
+      const role = req.body.role;
+
+      const group = await Group.findById(groupId);
+      if (!group) {
+        return res.status(404).json({ error: "Không tìm thấy nhóm" });
+      }
+
+      // if(group.ownerId !== reqUser )
+      //   return res.status(403).json({ error: "Không phải trưởng nhóm" })
+
+      //Tìm thành viên trong nhóm
+      const memberInGroup = group.members.find(
+        (member) => member._id.toString() === userGrantId
+      );
+      if (!memberInGroup) {
+        return res
+          .status(404)
+          .json({ error: "Không tìm thấy thành viên trong nhóm" });
+      }
+      // Gán quyền cho thành viên đó
+      if(role==='admin') {
+        const index = memberInGroup.roles.indexOf('admin');
+        // Thêm quyền 'admin' nếu nó không tồn tại trong mảng roles của thành viên
+        if (index === -1) {
+          memberInGroup.roles.push(Roles.ADMIN)
+          memberInGroup.addAt= new Date()
+        }
+      }
+      else if(role==='member') {
+        // Xóa quyền 'admin' nếu nó tồn tại trong mảng roles của thành viên
+        const index = memberInGroup.roles.indexOf('admin');
+        if (index !== -1) {
+          memberInGroup.roles.splice(index, 1)
+          memberInGroup.addAt= new Date()
+
+        }
+      }
+      await group.save()
+      const result = group.members.find(
+        (member) => member._id.toString() === userGrantId
+      );
+      return res.status(200).json({result})
+    } catch (error) {
+        console.error('Lỗi khi gán quyền cho thành viên:', error);
+        res.status(500).json({ error: 'Đã xảy ra lỗi khi gán quyền cho thành viên' });
+    }
+}
+
 const outGroup = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -391,5 +444,6 @@ module.exports = {
   deleteMember,
   outGroup,
   deleteGroup,
-  uploadImageToS3
+  uploadImageToS3,
+  grantPermissionMember
 };
