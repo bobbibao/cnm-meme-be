@@ -12,7 +12,7 @@ const otpController = require("../controllers/otpController");
 const { getGroupDetail, getGroupDetails } = require('../controllers/groupDetailController');
 const { getDirect, getDirects, getInfoChatItem } = require('../controllers/directController');
 const { getChatRoom, getChatRoomByDirectId } = require('../controllers/chatRoomController');
-const { getGroup, getGroups, getGroupByGroupDetailId, getInfoGroupItem,createGroup,addMember, deleteMember, outGroup, deleteGroup, grantPermissionMember } = require('../controllers/groupController');
+const { getGroup, getGroups, getGroupByGroupDetailId, getInfoGroupItem,createGroup,addMember, deleteMember, outGroup, deleteGroup, grantPermissionMember, getProfileGroup } = require('../controllers/groupController');
 
 const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getProfile, updateAvatar,
     searchUser, addFriend, acceptFriend, getAllFriendRequest, getUserProfile, getUserByChatRoomId, getUser,
