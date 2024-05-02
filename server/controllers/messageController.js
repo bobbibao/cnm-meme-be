@@ -68,6 +68,7 @@ const getMessages = async (req, res) => {
           // sent: req.user.id === message.senderID.toString(),
           // lấy thông tin người gửi
           sent: message.senderID,
+          reply: message.reply,
           senderName: sender.displayName,
           avatarSender: sender.photoURL,
           unsent: message.isDeleted,
@@ -127,7 +128,7 @@ const searchMessages = async (req, res) => {
 };
 
 const sendMessage = async (req, res) => {
-  const { chatRoomId, content } = req.body.data;
+  const { chatRoomId, content, reply } = req.body.data;
   const ChatRoom = require('../models/chatRoom');
   const direct = await Direct.findOne({ receiverId: { $eq: req.user.id }, chatRoomId: chatRoomId });
   const group = await Group.findOne({chatRoomId: chatRoomId}) || null
@@ -135,7 +136,9 @@ const sendMessage = async (req, res) => {
   const newMessage = new Message({
     senderID: req.user.id,
     content: content,
+    reply: reply
   });
+  console.log(newMessage);
   const message = await newMessage.save();
   const chatRoom = await ChatRoom.findById(chatRoomId);
   chatRoom.messages.push(message._id);

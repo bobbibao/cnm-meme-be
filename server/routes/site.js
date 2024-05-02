@@ -12,17 +12,23 @@ const otpController = require("../controllers/otpController");
 const { getGroupDetail, getGroupDetails } = require('../controllers/groupDetailController');
 const { getDirect, getDirects, getInfoChatItem } = require('../controllers/directController');
 const { getChatRoom, getChatRoomByDirectId } = require('../controllers/chatRoomController');
-const { getGroup, getGroups, getGroupByGroupDetailId, getInfoGroupItem,createGroup,addMember, deleteMember, outGroup, deleteGroup, getProfileGroup } = require('../controllers/groupController');
+const { getGroup, getGroups, getGroupByGroupDetailId, getInfoGroupItem,createGroup,addMember, deleteMember, outGroup, deleteGroup, grantPermissionMember, getProfileGroup } = require('../controllers/groupController');
 
 const {registerUser, loginUser, resetPassword,changePassword, forgotPassword, updateUser, getProfile, updateAvatar,
     searchUser, addFriend, acceptFriend, getAllFriendRequest, getUserProfile, getUserByChatRoomId, getUser,
-getAllFriend, getUserNotInGroup,searchMessage,searchUserName}  = require('../controllers/userController');
+    getAllFriend, getUserNotInGroup,searchMessage,searchUserName, cancelFriendRequest, getAllCancelFriendRequest}  = require('../controllers/userController');
 
 const { getMessage, getMessages, searchMessages, unsentMessage, sendMessage, sendMedia, reactMessage,
     forwardMessage, hideMessage, deleteMessage,pinMessage,unPinMessage } = require('../controllers/messageController');
 const {sendResetPasswordOTP, verifyResetPasswordOTP, updatePassword} = require('../controllers/forgotPass');
 
 router.get('/getAllFriend', authenticateJWT, getAllFriend);
+router.get(
+  "/getAllCancelFriendRequest",
+  authenticateJWT,
+  getAllCancelFriendRequest
+);
+router.post("/cancel-friend-request", authenticateJWT, cancelFriendRequest);
 
 
 //Group detail
@@ -35,12 +41,15 @@ router.get('/groups/', authenticateJWT, getGroups);
 router.get('/groupByGroupDetailId/:groupDetailId', authenticateJWT, getGroupByGroupDetailId);
 router.get('/info-group-items', authenticateJWT, getInfoGroupItem);
 router.post('/groups/:chatRoomId/delete-member', authenticateJWT, deleteMember);
-router.post('/groups/:groupId/outGroup', authenticateJWT, outGroup);
-
+router.post("/groups/:chatRoomId/outGroup", authenticateJWT, outGroup);
+router.delete("/delete-group/:groupId", authenticateJWT, deleteGroup);
 router.post("/creategroup", authenticateJWT,upload.single('photo'), createGroup);
 // router.post("/groups/:groupId/addMember", authenticateJWT, addMember);
 router.post("/groups/:chatRoomId/add-member", authenticateJWT, addMember);
 router.post("/delete-group", authenticateJWT, deleteGroup);
+router.post("/grant-permission", authenticateJWT, grantPermissionMember);
+
+
 router.get("/profile-group/:groupId", authenticateJWT, getProfileGroup);
 //Direct
 router.get('/direct/:id', authenticateJWT, getDirect);

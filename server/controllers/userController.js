@@ -413,6 +413,7 @@ const searchUser = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 const searchMessage = async (req, res) => {
   const searchTerm = req.body.searchTerm;
   try {
@@ -519,19 +520,22 @@ const addFriend = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     const friend = await User.findById(friendId);
+    console.log(friend);
     if (!friend) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
     if (user.friends.includes(friendId)) {
-      return res.status(400).json({ message: 'User is already your friend' });
+      return res.status(400).json({ message: "User is already your friend" });
     }
-    if(friend.friendsRequest.includes(user._id)){
-      return res.status(400).json({ message: 'Friend request already sent' });
+    if (friend.friendsRequest.includes(user._id)) {
+      return res.status(400).json({ message: "Friend request already sent" });
     }
     friend.friendsRequest.push(user._id);
+    user.requestsSent.push(friendId);
     await friend.save();
-    res.status(200).json(apiCode.success({}, 'Add Friend Success'));
-  }catch (error) {
+    await user.save();
+    res.status(200).json(apiCode.success({}, "Add Friend Success"));
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
@@ -572,6 +576,63 @@ const acceptFriend = async (req, res) => {
     res.status(200).json(apiCode.success({}, 'Accept Friend Success'));
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+//thu hồi lời mời đã gửi
+const cancelFriendRequest = async (req, res) => {
+  const friendId = req.body.friendId;
+  try {
+    const user = await User.findById(req.user.id);
+    const friend = await User.findById(friendId);
+    console.log(user);
+    console.log(friend);
+    if (!friend) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (!user.requestsSent.includes(friendId)) {
+      return res.status(400).json({ message: "No friend request found" });
+    }
+    user.requestsSent = user.requestsSent.filter(
+      (id) => id.toString() !== friendId.toString()
+    );
+    friend.friendsRequest = friend.friendsRequest.filter(
+      (id) => id.toString() !== user._id.toString()
+    );
+    await user.save();
+    await friend.save();
+    res.status(200).json(apiCode.success({}, "Cancel Friend Request Success"));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+const getAllCancelFriendRequest = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Người dùng không  tồn tại." });
+    }
+    const requestSent = await Promise.all(
+      user.requestsSent.map(async (friendId) => {
+        const friend = await User.findById(friendId);
+        return {
+          _id: friend._id,
+          name: friend.displayName,
+          email: friend.email,
+          phone: friend.phoneNumber,
+          avatar: friend.photoURL,
+        };
+      })
+    );
+    console.log(requestSent);
+    return res
+      .status(200)
+      .json(
+        apiCode.success(requestSent, "Get All Cancel Friend Request Success")
+      );
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 const getAllFriendRequest = async (req, res) => {
@@ -730,5 +791,7 @@ module.exports = {
   getUserNotInGroup,
   changePassword,
   searchMessage,
-  searchUserName
+  searchUserName,
+  getAllCancelFriendRequest,
+  cancelFriendRequest
 };
