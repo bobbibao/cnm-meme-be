@@ -14,12 +14,12 @@ const { getDirect, getDirects, getInfoChatItem } = require('../controllers/direc
 const { getChatRoom, getChatRoomByDirectId } = require('../controllers/chatRoomController');
 const { getGroup, getGroups, getGroupByGroupDetailId, getInfoGroupItem,createGroup,addMember, deleteMember, outGroup, deleteGroup, grantPermissionMember, getProfileGroup } = require('../controllers/groupController');
 
-const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getProfile, updateAvatar,
+const {registerUser, loginUser, resetPassword,changePassword, forgotPassword, updateUser, getProfile, updateAvatar,
     searchUser, addFriend, acceptFriend, getAllFriendRequest, getUserProfile, getUserByChatRoomId, getUser,
-getAllFriend, getUserNotInGroup, cancelFriendRequest, getAllCancelFriendRequest}  = require('../controllers/userController');
+    getAllFriend, getUserNotInGroup,searchMessage,searchUserName, cancelFriendRequest, getAllCancelFriendRequest}  = require('../controllers/userController');
 
 const { getMessage, getMessages, searchMessages, unsentMessage, sendMessage, sendMedia, reactMessage,
-    forwardMessage, hideMessage, deleteMessage } = require('../controllers/messageController');
+    forwardMessage, hideMessage, deleteMessage,pinMessage,unPinMessage } = require('../controllers/messageController');
 const {sendResetPasswordOTP, verifyResetPasswordOTP, updatePassword} = require('../controllers/forgotPass');
 
 router.get('/getAllFriend', authenticateJWT, getAllFriend);
@@ -71,6 +71,7 @@ router.post("/users/verify", otpController.verifyOTP);
 router.post("/users/update-password", updatePassword);
 router.post("/users/send-reset-passwordOTP", sendResetPasswordOTP);
 router.post("/users/verify-reset-passwordOTP", verifyResetPasswordOTP);
+router.post("/user/change-password",authenticateJWT, changePassword);
 
 // profile management
 router.get("/profile", authenticateJWT, getProfile);
@@ -83,6 +84,9 @@ router.get("/getAllFriendRequest", authenticateJWT, getAllFriendRequest);
 router.post('/search-user', authenticateJWT, searchUser);
 router.get('/info-user/:chatRoomId', authenticateJWT, getUserByChatRoomId);
 router.get('/info-add-member/:groupId', authenticateJWT, getUserNotInGroup);
+router.post('/search-messages', authenticateJWT, searchMessage);
+router.post('/search-user-name', authenticateJWT, searchUserName);
+
 //Message
 router.get('/message/:id', authenticateJWT, getMessage);
 router.post('/messages/:chatRoomId', authenticateJWT, sendMessage);
@@ -95,6 +99,9 @@ router.patch('/hide-message/:id', authenticateJWT, hideMessage);
 router.patch('/react-message/:id', authenticateJWT, reactMessage);
 router.patch('/forward-message/:id', authenticateJWT, forwardMessage);
 router.delete('/message/:id', authenticateJWT, deleteMessage);
+router.patch('/pin-message/:id', authenticateJWT, pinMessage);
+router.patch('/unpin-message/:id', authenticateJWT, unPinMessage);
+
 
 
 module.exports = router;
