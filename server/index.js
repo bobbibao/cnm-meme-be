@@ -73,6 +73,7 @@ mongoose.connect(mongodb_connect_string)
                 senderName: sender?.displayName,
                 avatarSender: sender?.photoURL,
                 content: message.content,
+                reply: message.reply,
                 time: now().getHours() + ':' + now().getMinutes(),
                 type: message.type,
                 media: message.media,
@@ -141,7 +142,7 @@ socket.on("disconnect", async () => {
       //     io.to(room).emit('call', meetingId);
       //   });
       // }
-      
+
       socket.on('notify', async (data) => {
         console.log("Notification", data);
         io.to(data.userId).emit('notify', data);
@@ -149,7 +150,7 @@ socket.on("disconnect", async () => {
         // console.log(user);
         // io.to(data.chatRoomId).emit('notify', data);
       });
-      
+
       socket.on("accept meeting", async (data) => {
         console.log("Accept meeting", data);
         io.to(data.userId).emit('accept meeting', data);

@@ -68,6 +68,7 @@ const getMessages = async (req, res) => {
           // sent: req.user.id === message.senderID.toString(),
           // lấy thông tin người gửi
           sent: message.senderID,
+          reply: message.reply,
           senderName: sender.displayName,
           avatarSender: sender.photoURL,
           unsent: message.isDeleted,
@@ -76,7 +77,8 @@ const getMessages = async (req, res) => {
           reactions: message.reactions,
           hided: message.hidedUsers.includes(new Types.ObjectId(req.user.id)),
           type: message.type,
-          media: message.media
+          media: message.media,
+          pin: message.pin
         }
       }))
       if(direct){
@@ -126,7 +128,7 @@ const searchMessages = async (req, res) => {
 };
 
 const sendMessage = async (req, res) => {
-  const { chatRoomId, content } = req.body.data;
+  const { chatRoomId, content, reply } = req.body.data;
   const ChatRoom = require('../models/chatRoom');
   const direct = await Direct.findOne({ receiverId: { $eq: req.user.id }, chatRoomId: chatRoomId });
   const group = await Group.findOne({chatRoomId: chatRoomId}) || null
@@ -134,7 +136,9 @@ const sendMessage = async (req, res) => {
   const newMessage = new Message({
     senderID: req.user.id,
     content: content,
+    reply: reply
   });
+  console.log(newMessage);
   const message = await newMessage.save();
   const chatRoom = await ChatRoom.findById(chatRoomId);
   chatRoom.messages.push(message._id);
@@ -319,7 +323,40 @@ const deleteMessage = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+const pinMessage = async (req, res) => {
+  const id = req.params.id; // Lấy id của tin nhắn từ yêu cầu
+  try {
+    const message = await Message.findById(id);
+    if (!message) {
+      return res.status(404).json(apiCode.error("Message not found"));
+    } else {
+      // Cập nhật trạng thái pin của tin nhắn trong cơ sở dữ liệu
+      message.pin = true;
+      await message.save();
 
+      return res.status(200).json(apiCode.success(message, "Pin Message Success"));
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+const unPinMessage = async (req, res) => {
+  const id = req.params.id; // Lấy id của tin nhắn từ yêu cầu
+  try {
+    const message = await Message.findById(id);
+    if (!message) {
+      return res.status(404).json(apiCode.error("Message not found"));
+    } else {
+      // Cập nhật trạng thái pin của tin nhắn trong cơ sở dữ liệu
+      message.pin = false;
+      await message.save();
+
+      return res.status(200).json(apiCode.success(message, "UnPin Message Success"));
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 module.exports = {
   getMessage,
   getMessages,
@@ -330,6 +367,8 @@ module.exports = {
   reactMessage,
   forwardMessage,
   hideMessage,
-  deleteMessage
+  deleteMessage,
+  pinMessage,
+  unPinMessage
 
 }
