@@ -16,7 +16,7 @@ const { getGroup, getGroups, getGroupByGroupDetailId, getInfoGroupItem,createGro
 
 const {registerUser, loginUser, resetPassword, forgotPassword, updateUser, getProfile, updateAvatar,
     searchUser, addFriend, acceptFriend, getAllFriendRequest, getUserProfile, getUserByChatRoomId, getUser,
-getAllFriend, getUserNotInGroup, cancelFriendRequest, getAllCancelFriendRequest}  = require('../controllers/userController');
+getAllFriend, getUserNotInGroup, cancelFriendRequest, getAllCancelFriendRequest ,declineFriendRequest, unfriend, checkFriend}  = require('../controllers/userController');
 
 const { getMessage, getMessages, searchMessages, unsentMessage, sendMessage, sendMedia, reactMessage,
     forwardMessage, hideMessage, deleteMessage } = require('../controllers/messageController');
@@ -29,6 +29,9 @@ router.get(
   getAllCancelFriendRequest
 );
 router.post("/cancel-friend-request", authenticateJWT, cancelFriendRequest);
+router.post("/decline-friend-request", authenticateJWT, declineFriendRequest);
+router.post("/unfriend", authenticateJWT, unfriend);
+router.post("check-friend", authenticateJWT, checkFriend);
 
 
 //Group detail
