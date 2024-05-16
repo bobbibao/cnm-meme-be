@@ -639,7 +639,7 @@ const getProfileGroup = async (req, res) => {
         displayName: user.displayName,
         photoURL: user.photoURL,
         roles: group.members.find(
-          (member) => member.userId.toString() === user._id.toString()
+          (member) => member?.userId.toString() === user._id.toString()
         ).roles[0],
       })),
     };
