@@ -34,20 +34,27 @@ mongoose.connect(mongodb_connect_string)
       }
     });
     io.on('connection', (socket) => {
-      socket.on('setup', async (userId) => {
-        try{
-          console.log(userId);
-          userId = JSON.parse(userId);
-          socket.userId = userId;
-          socket.join(userId);
-          const user = await User.findById(userId);
-          user.isOnline = true;
-          await user.save();
-          socket.emit('setup', userId);
-        } catch(err) {
-          console.log(err);
-        }
-      });
+   socket.on("setup", async (userId) => {
+     try {
+       console.log(userId);
+       userId = JSON.parse(userId);
+       if (userId) {
+         socket.userId = userId;
+         socket.join(userId);
+         const user = await User.findById(userId);
+         if (user) {
+           // Thực hiện các thao tác khác nếu cần
+         } else {
+           console.log("User not found");
+         }
+         socket.emit("setup", userId);
+       } else {
+         console.log("Invalid userId:", userId);
+       }
+     } catch (err) {
+       console.log(err);
+     }
+   });
       socket.on("join chat", (room, userId) => {
         userId = JSON.parse(userId);
         socket.join(room);
@@ -101,17 +108,27 @@ mongoose.connect(mongodb_connect_string)
       //   io.to(data.chatRoomId).emit('stop typing', data);
       // });
 
-      socket.on('disconnect', async () => {
-        try{
-          console.log('user disconnected', socket.userId);
-          const user = await User.findById(socket.userId);
-          user.isOnline = false;
-          user.lastOnlineTime = Date.now();
-          await user.save();
-        } catch(err) {
-          console.log(err);
-        }
-      });
+socket.on("disconnect", async () => {
+  try {
+    console.log("user disconnected", socket.userId);
+    if (socket.userId) {
+      // Tiếp tục xử lý khi socket.userId không phải là null
+      const user = await User.findById(socket.userId);
+      if (user) {
+        user.isOnline = false;
+        user.lastOnlineTime = Date.now();
+        await user.save();
+      } else {
+        console.log("User not found");
+      }
+    } else {
+      console.log("socket.userId is null");
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+
 
       socket.on('call', (chatRoomId) => {
         createMeeting().then((meetingId) => {

@@ -51,7 +51,8 @@ const getInfoChatItem = async (req, res) => {
 
         // Tính toán số lượng tin nhắn chưa đọc cho mỗi group
         groupDetails.forEach(groupDetail => {
-            unreadMessageCounts[groupDetail.groupId] = groupDetail.unReadMessageCount;
+            unreadMessageCounts[groupDetail.groupId] =
+              groupDetail.unreadMessageCount;
         });
 
         const [directsResult, groupsResult] = await Promise.allSettled([
