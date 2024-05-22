@@ -572,12 +572,7 @@ const acceptFriend = async (req, res) => {
     }
 
     // Tìm phòng chat chung giữa hai người dùng
-    const existingDirect = await Direct.findOne({
-      $or: [
-        { senderId: user._id },
-        { receiverId: friendId},
-      ],
-    });
+    const existingDirect = user.directs.map((direct) => direct.receiverId).includes(friendId);
     console.log("existingDirect",existingDirect);
 
     // Nếu phòng chat đã tồn tại
