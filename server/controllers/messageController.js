@@ -1,7 +1,7 @@
 const Message = require("../models/message");
 const ChatRoom = require("../models/chatRoom");
 const User = require("../models/user")
-const Direct = require("../models/Direct");
+const Direct = require("../models/direct");
 const Group = require("../models/group");
 
 const ApiCode = require("../utils/apicode");

@@ -1,4 +1,4 @@
-const Direct = require('../models/Direct');
+const Direct = require('../models/direct');
 const ApiCode = require("../utils/apicode");
 const apiCode = new ApiCode();
 const User = require('../models/user');
