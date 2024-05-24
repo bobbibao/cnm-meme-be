@@ -535,13 +535,8 @@ const deleteGroup = async (req, res) => {
     }
 
     // Kiểm tra xem người dùng có quyền "owner" trong nhóm không
-    const isOwner = group.members.some(
-      (member) =>
-        member.userId &&
-        member.roles &&
-        member.userId.toString() === userId &&
-        member.roles.includes("owner")
-    );
+    console.log(group);
+    const isOwner = group.ownerId.toString() === userId;
 
     // Nếu người dùng không phải là "owner", trả về lỗi
     if (!isOwner) {
