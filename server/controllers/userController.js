@@ -572,14 +572,23 @@ const acceptFriend = async (req, res) => {
     }
 
     // Tìm phòng chat chung giữa hai người dùng
-    const existingDirect = user.directs.map((direct) => direct.receiverId).includes(friendId);
+    let existingDirect = false;
+    let direct2 = null;
+    for (let i = 0; i < user.directs.length; i++) {
+      const direct = await Direct.findById(user.directs[i]);
+      if (direct?.receiverId.toString() === friendId.toString()) {
+        existingDirect = true;
+        direct2 = direct;
+        break;
+      }
+      console.log("direct",direct);
+    }
     console.log("existingDirect",existingDirect);
-
     // Nếu phòng chat đã tồn tại
     if (existingDirect) {
       // Cập nhật thời gian tạo mới nhất
-      existingDirect.createdAt = new Date();
-      await existingDirect.save();
+      direct2.createdAt = new Date();
+      await direct2.save();
     } else {
       // Nếu phòng chat chưa tồn tại, tạo một phòng chat mới
       const chatRoom = new ChatRoom({

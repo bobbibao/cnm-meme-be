@@ -403,15 +403,11 @@ const outGroup = async (req, res) => {
     const memberIndex = members.findIndex(
       (member) => member.userId.toString() === userId
     );
-
     // Nếu không tìm thấy thành viên trong nhóm
     if (memberIndex === -1) {
       return res
         .status(404)
         .json({ error: "Không tìm thấy thành viên trong nhóm" });
-    }
-    if (memberIndex === 0) {
-      return res.status(400).json({ error: "Không thể rời khỏi nhóm" });
     }
 
     // Xóa thành viên ra khỏi nhóm
@@ -540,13 +536,8 @@ const deleteGroup = async (req, res) => {
     }
 
     // Kiểm tra xem người dùng có quyền "owner" trong nhóm không
-    const isOwner = group.members.some(
-      (member) =>
-        member.userId &&
-        member.roles &&
-        member.userId.toString() === userId &&
-        member.roles.includes("owner")
-    );
+    console.log(group);
+    const isOwner = group.ownerId.toString() === userId;
 
     // Nếu người dùng không phải là "owner", trả về lỗi
     if (!isOwner) {
