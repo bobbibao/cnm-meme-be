@@ -96,6 +96,7 @@ mongoose.connect(mongodb_connect_string)
       });
 
       socket.on('react message', (message) => {
+        console.log('react message', message);
         io.to(message.chatRoomId).emit('react message', message);
       });
       // socket.on('typing', (data) => {

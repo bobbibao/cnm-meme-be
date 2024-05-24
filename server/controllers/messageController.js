@@ -68,6 +68,7 @@ const getMessages = async (req, res) => {
           // sent: req.user.id === message.senderID.toString(),
           // lấy thông tin người gửi
           sent: message.senderID,
+          isSent: req.user.id === message.senderID.toString(),
           reply: message.reply,
           senderName: sender.displayName,
           avatarSender: sender.photoURL,
