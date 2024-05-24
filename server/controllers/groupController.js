@@ -7,6 +7,7 @@ const Roles = require('../utils/rolesEnum');
 const {checkPermsOfUserInGroup} = require('../utils/permission');
 const bodyParser = require('body-parser');
 const express = require('express');
+const { Types } = require('mongoose');
 const app = express();
 app.use(bodyParser.json());
 
@@ -482,12 +483,12 @@ const grantPermissionMember = async (req, res)=> {
       return res.status(404).json({ error: "Không tìm thấy nhóm" });
     }
 
-    // if(group.ownerId !== reqUser )
-    //   return res.status(403).json({ error: "Không phải trưởng nhóm" })
+    if(!group.ownerId.equals(reqUser))
+      return res.status(403).json({ error: "Không phải trưởng nhóm" })
 
     //Tìm thành viên trong nhóm
     const memberInGroup = group.members.find(
-      (member) => member._id.toString() === userGrantId
+      (member) => member.userId.toString() === userGrantId
     );
     if (!memberInGroup) {
       return res
@@ -499,7 +500,7 @@ const grantPermissionMember = async (req, res)=> {
       const index = memberInGroup.roles.indexOf('admin');
       // Thêm quyền 'admin' nếu nó không tồn tại trong mảng roles của thành viên
       if (index === -1) {
-        memberInGroup.roles.push(Roles.ADMIN)
+        memberInGroup.roles.unshift(Roles.ADMIN)
         memberInGroup.addAt= new Date()
       }
     }
