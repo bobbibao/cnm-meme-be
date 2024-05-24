@@ -402,15 +402,11 @@ const outGroup = async (req, res) => {
     const memberIndex = members.findIndex(
       (member) => member.userId.toString() === userId
     );
-
     // Nếu không tìm thấy thành viên trong nhóm
     if (memberIndex === -1) {
       return res
         .status(404)
         .json({ error: "Không tìm thấy thành viên trong nhóm" });
-    }
-    if (memberIndex === 0) {
-      return res.status(400).json({ error: "Không thể rời khỏi nhóm" });
     }
 
     // Xóa thành viên ra khỏi nhóm
