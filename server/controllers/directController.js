@@ -101,7 +101,7 @@ const getInfoChatItem = async (req, res) => {
             if (!lastMessageId) {
                 lastMessage = {
                     text: 'new chat',
-                    createAt: 'null'
+                    createAt: Math.floor((Date.now() - chatRoom.createdAt)/ 1000)
                 }
             }else{
                 const message = await Message.findById(lastMessageId);
@@ -109,11 +109,10 @@ const getInfoChatItem = async (req, res) => {
                 else{
                     lastMessage = {
                     text: message.content === '' ? 'Đã gửi một media' : message.content,
-                    time: formatTime(Date.now() - message.createAt)
+                    createAt: Math.floor((Date.now() - message.createAt)/ 1000)
                 }
 
-                function formatTime(milliseconds) {
-                    const seconds = Math.floor(milliseconds / 1000);
+                function formatTime(seconds) {
                     if (seconds < 60) {
                         return seconds + ' seconds ago';
                     }
@@ -150,10 +149,21 @@ const getInfoChatItem = async (req, res) => {
         // Lấy kết quả từ các promise đã giải quyết
         infoChatItems = [...directsResult.value, ...groupsResult.value];
 
-        // Sắp xếp mảng kết quả theo trường updatedAt
-        infoChatItems.sort((a, b) => b.name - a.name);
-
-        res.status(200).json(apiCode.success(infoChatItems, 'Get Info Chat Item Success'));
+        infoChatItems.sort((a, b) => {
+            if (a.lastMessage.createAt > b.lastMessage.createAt) {
+                return 1;
+            }
+            if (a.lastMessage.createAt < b.lastMessage.createAt) {
+                return -1;
+            }
+            return 0;
+        
+        });
+        //format lại thời gian
+        infoChatItems.forEach((item, index) => {
+            item.lastMessage.createAt = formatTime(item.lastMessage.createAt);
+        });
+        res.status(200).json(apiCode.success(infoChatItems, 'Get Infos Chat Item Success'));
     }catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -165,7 +175,7 @@ async function getLastMessage(chatRoom) {
     if (!lastMessageId) {
         return {
             text: 'new chat',
-            createAt: Date.now() // Hoặc bạn có thể trả về một giá trị thời gian mặc định khác
+            createAt:  Math.floor((Date.now() - chatRoom.createdAt)/ 1000)// Hoặc bạn có thể trả về một giá trị thời gian mặc định khác
         };
     } else {
         const message = await Message.findById(lastMessageId);
@@ -173,7 +183,7 @@ async function getLastMessage(chatRoom) {
             return null;
         }
         else{
-            const formattedTime = formatTime(Date.now() - message.createAt);
+            const formattedTime = Math.floor((Date.now() - message.createAt)/ 1000);
             const text = message.content === '' ? 'Đã gửi một media' : message.content;
             return { text:text, createAt: formattedTime };
 
