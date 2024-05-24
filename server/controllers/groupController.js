@@ -207,7 +207,7 @@ const createGroup = async (req, res) => {
       }
     }
 
-    console.log(newGroup);
+    // console.log(newGroup);
     res.status(201).json({ message: "Nhóm đã được tạo thành công", group: newGroup });
   } catch (error) {
     console.error("Lỗi khi tạo nhóm:", error);
@@ -315,11 +315,11 @@ const addMember = async (req, res) => {
     if (!group) {
       return res.status(404).json({ error: "Không tìm thấy nhóm" });
     }
-    console.log(group.members);
+    // console.log(group.members);
     const memberIndex = group.members.findIndex(
       (member) => member.userId.toString() === userId
     );
-    console.log(memberIndex);
+    // console.log(memberIndex);
     if (memberIndex !== -1) {
       return res
         .status(400)
@@ -336,8 +336,8 @@ const addMember = async (req, res) => {
     });
     user.groupDetails.push(newGroupDetails._id);
     group.members.push(newMember);
-    console.log(group);
-    console.log(newGroupDetails);
+    // console.log(group);
+    // console.log(newGroupDetails);
     await newGroupDetails.save();
     await group.save();
     await user.save();
@@ -536,7 +536,7 @@ const deleteGroup = async (req, res) => {
     }
 
     // Kiểm tra xem người dùng có quyền "owner" trong nhóm không
-    console.log(group);
+    // console.log(group);
     const isOwner = group.ownerId.toString() === userId;
 
     // Nếu người dùng không phải là "owner", trả về lỗi
@@ -624,7 +624,7 @@ const getProfileGroup = async (req, res) => {
       return res.status(404).json(apiCode.error("Không tìm thấy nhóm"));
     }
     const members = group.members.map((member) => member.userId);
-    console.log("asd", members);
+    // console.log("asd", members);
     const users = await User.find({ _id: { $in: members } });
     const dataMember = {
       members: users.map((user) => ({
@@ -636,13 +636,13 @@ const getProfileGroup = async (req, res) => {
         ).roles[0],
       })),
     };
-    console.log("member",dataMember);
+    // console.log("member",dataMember);
     const data = {
       name: group.name,
       photoURL: group.photoURL,
       members: dataMember.members,
     };
-    console.log(data)
+    // console.log(data)
     res.status(200).json(apiCode.success(data, "Lấy thông tin nhóm thành công"));
   } catch (error) {
     console.error("Lỗi khi lấy thông tin nhóm:", error);
