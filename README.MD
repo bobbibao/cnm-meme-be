@@ -1,4 +1,4 @@
-# MeMe_ChatApp_Backend
+# MeMe_ChatApp_Backend: Real-time messaging on both web and mobile between users.
 
 - BackEnd:   https://github.com/bobbibao/cnm-meme-be.git (Demo)
 - FrontEnd:  https://github.com/bobbibao/cnm-meme-fe.git
@@ -123,7 +123,7 @@ PORT=3000
 ```
 
 - By default, nodemon will look for the `server` directory. If you want to change the directory, you can add the `nod```
-
+3
 
 ## Some picture for demo:
 
