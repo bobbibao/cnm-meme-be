@@ -1,6 +1,6 @@
 # MeMe_ChatApp_Backend
 
-- BackEnd:   https://github.com/bobbibao/cnm-meme-be.git
+- BackEnd:   https://github.com/bobbibao/cnm-meme-be.git (Demo)
 - FrontEnd:  https://github.com/bobbibao/cnm-meme-fe.git
 - Mobile:    https://github.com/bobbibao/cnm-meme-app.git
 
@@ -125,7 +125,7 @@ PORT=3000
 - By default, nodemon will look for the `server` directory. If you want to change the directory, you can add the `nod```
 
 
-## Demo:
+## Some picture for demo:
 
 ### Login
 <img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.25.46.png">
