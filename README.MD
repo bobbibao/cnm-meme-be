@@ -1,7 +1,11 @@
 # MeMe_ChatApp_Backend
 
+BackEnd:   https://github.com/bobbibao/cnm-meme-be.git
+FrontEnd:  https://github.com/bobbibao/cnm-meme-fe.git
+Mobile:    https://github.com/bobbibao/cnm-meme-app.git
+
 ## Author
-- [Lê Hoàng Bảo (Lead)]()
+- [Lê Hoàng Bảo (Leader)]()
 - [Nguyễn Huỳnh Anh Thắng (Mentor)]()
 - [Trần Văn Bảo]()
 - [Lê Trần Tú Uyên]()
@@ -119,3 +123,38 @@ PORT=3000
 ```
 
 - By default, nodemon will look for the `server` directory. If you want to change the directory, you can add the `nod```
+
+
+## Demo:
+
+### Login
+https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.25.46.png
+
+### Reset password
+https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.26.16.png
+
+### Profile
+https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.34.53.png
+
+### Friend list:
+https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.34.28.png
+
+### Conversation:
+https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.31.06.png
+
+### User profile
+https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.32.12.png
+
+### Group info:
+https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.43.02.png
+
+### Create group:
+https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.35.04.png
+
+### Add friend to group:
+https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.32.49.png
+
+### Messages (send emoji, text, image, file, video,...), forward, reaction, reply,... :
+https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.34.06.png
+https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.33.46.png
+https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.48.18.png
