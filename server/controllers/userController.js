@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const User = require('../models/user');
 const bcrypt = require("bcrypt");
 const validator = require("validator");
-const Direct = require('../models/Direct');
+const Direct = require('../models/direct');
 const ChatRoom = require('../models/chatRoom');
 const Group = require('../models/group');
 const nodemailer = require("nodemailer");
@@ -222,7 +222,7 @@ const forgotPassword = async (req, res) => {
         pass: process.env.MAIL_PASS,
       },
     });
-    console.log(process.env.URL2); 
+    console.log(process.env.URL2);
     var mailOptions = {
       from: process.env.MAIL_USER,
       to: email,
@@ -259,7 +259,7 @@ const getUser = async (req, res) => {
 
 //Profile management
 const getProfile = async (req, res) => {
-  const user = await User.findById(req.user.id); 
+  const user = await User.findById(req.user.id);
   const data = {
     name: user.displayName,
     email: user.email,
@@ -361,7 +361,7 @@ const updateAvatar = async (req, res) => {
           return res.status(500).json({ message: 'Failed to upload image' });
       }
       const id = req.user.id;
-      const file = req.file; 
+      const file = req.file;
       if (!file) {
           return res.status(400).json({ message: 'No file uploaded' });
       }
@@ -419,14 +419,14 @@ const searchMessage = async (req, res) => {
   const searchTerm = req.body.searchTerm;
   try {
     // Check if req.user exists and contains the necessary details
-  
+
     // Retrieve directs from the user object
     const currentUser = await User.findById(req.user.id);
     if (!currentUser) {
       return res.status(404).json({ message: 'User not found' });
     }
     const directs = currentUser.directs;
-    console.log('Directs:', directs); 
+    console.log('Directs:', directs);
     // Initialize an array to store chat items
     let chatItems = [];
 
@@ -487,9 +487,9 @@ const searchUserName = async (req, res) => {
     }
 
     // Find the friends of the currently logged-in user whose displayName matches the searchTerm
-    const users = await User.find({ 
+    const users = await User.find({
       _id: { $in: currentUser.friends }, // Search within the list of friends
-      displayName: { $regex: searchTerm, $options: 'i' } 
+      displayName: { $regex: searchTerm, $options: 'i' }
     });
 
     // Iterate through each user to find their last message
@@ -572,19 +572,23 @@ const acceptFriend = async (req, res) => {
     }
 
     // Tìm phòng chat chung giữa hai người dùng
-    const existingDirect = await Direct.findOne({
-      $or: [
-        { senderId: user._id },
-        { receiverId: friendId},
-      ],
-    });
+    let existingDirect = false;
+    let direct2 = null;
+    for (let i = 0; i < user.directs.length; i++) {
+      const direct = await Direct.findById(user.directs[i]);
+      if (direct?.receiverId.toString() === friendId.toString()) {
+        existingDirect = true;
+        direct2 = direct;
+        break;
+      }
+      console.log("direct",direct);
+    }
     console.log("existingDirect",existingDirect);
-
     // Nếu phòng chat đã tồn tại
     if (existingDirect) {
       // Cập nhật thời gian tạo mới nhất
-      existingDirect.createdAt = new Date();
-      await existingDirect.save();
+      direct2.createdAt = new Date();
+      await direct2.save();
     } else {
       // Nếu phòng chat chưa tồn tại, tạo một phòng chat mới
       const chatRoom = new ChatRoom({
@@ -765,7 +769,7 @@ const getAllFriendRequest = async (req, res) => {
         phone: friend.phoneNumber,
         avatar: friend.photoURL,
         gender: friend.gender
-      }; 
+      };
     }));
     console.log(friendRequests);
     return res.status(200).json(apiCode.success(friendRequests, "Lấy danh sách lời mời kết bạn thành công."));
@@ -776,7 +780,7 @@ const getAllFriendRequest = async (req, res) => {
       .json({ message: "Đã xảy ra lỗi khi lấy danh sách yêu cầu kết bạn." });
   }
 }
-//check xem phải là bạn bè không 
+//check xem phải là bạn bè không
 const checkFriend = async (req, res) => {
   const friendId = req.body.friendId;
   try {
@@ -819,11 +823,11 @@ const getUserByChatRoomId = async (req, res) => {
   const chatRoomId = req.params.chatRoomId;
   try {
     const owner = await User.findById(req.user.id);
-    const group = await Group.findOne({chatRoomId: chatRoomId}); 
+    const group = await Group.findOne({chatRoomId: chatRoomId});
     if(group) return res.json(apiCode.success(group, 'Get Group Success'));
     owner.directs.forEach(async (directId) => {
       const direct = await Direct.findById(directId);
-      if (direct.chatRoomId.toString()  === chatRoomId) {
+      if (direct?.chatRoomId.toString()  === chatRoomId) {
         const user = await User.findById(direct.receiverId);
         return res.json(apiCode.success(user, 'Get User Success'));
       }
@@ -882,7 +886,7 @@ const getUserNotInGroup = async (req, res) => {
   const userId = req.user.id;
   const user = await User.findById(userId);
   const users = await User.find({ _id: { $in: user.friends } });
-  
+
   Group.findById(groupId)
     .then((group) => {
       if (!group) {
@@ -914,7 +918,7 @@ module.exports = {
   addFriend,
   acceptFriend,
   getAllFriendRequest,
-  getUserByChatRoomId, 
+  getUserByChatRoomId,
   getUserProfile,
   getUser,
   getUsersByChatRoomId,
@@ -926,6 +930,6 @@ module.exports = {
   getAllCancelFriendRequest,
   cancelFriendRequest,
   declineFriendRequest,
-  unfriend, 
+  unfriend,
   checkFriend
 };

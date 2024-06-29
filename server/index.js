@@ -66,7 +66,10 @@ mongoose.connect(mongodb_connect_string)
           const parseUserId = JSON.parse(message.senderId)
             const sender = await User.findById(parseUserId, 'displayName photoURL');
 
-            console.log(sender.displayName);
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const time = `${hours}:${minutes}`;
             const newMessage = {
                 id: id,
                 senderId: parseUserId,
@@ -74,7 +77,8 @@ mongoose.connect(mongodb_connect_string)
                 avatarSender: sender?.photoURL,
                 content: message.content,
                 reply: message.reply,
-                time: now().getHours() + ':' + now().getMinutes(),
+                createAt: "Just now",
+                time: time,
                 type: message.type,
                 media: message.media,
             };
@@ -96,6 +100,7 @@ mongoose.connect(mongodb_connect_string)
       });
 
       socket.on('react message', (message) => {
+        console.log('react message', message);
         io.to(message.chatRoomId).emit('react message', message);
       });
       // socket.on('typing', (data) => {
@@ -164,3 +169,20 @@ socket.on("disconnect", async () => {
   })
   .catch(err =>
     console.log(err));
+
+    function formatTime(milliseconds) {
+      const seconds = Math.floor(milliseconds / 1000);
+      if (seconds < 60) {
+          return seconds + ' seconds ago';
+      }
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) {
+          return minutes + ' minutes ago';
+      }
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) {
+          return hours + ' hours ago';
+      }
+      const days = Math.floor(hours / 24);
+      return days + ' days ago';
+  }

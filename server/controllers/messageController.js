@@ -1,7 +1,7 @@
 const Message = require("../models/message");
 const ChatRoom = require("../models/chatRoom");
 const User = require("../models/user")
-const Direct = require("../models/Direct");
+const Direct = require("../models/direct");
 const Group = require("../models/group");
 
 const ApiCode = require("../utils/apicode");
@@ -68,6 +68,7 @@ const getMessages = async (req, res) => {
           isSent: req.user.id === message.senderID.toString(),
           // lấy thông tin người gửi
           sent: message.senderID,
+          isSent: req.user.id === message.senderID.toString(),
           reply: message.reply,
           senderName: sender.displayName,
           avatarSender: sender.photoURL,

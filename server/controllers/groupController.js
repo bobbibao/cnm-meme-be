@@ -7,6 +7,7 @@ const Roles = require('../utils/rolesEnum');
 const {checkPermsOfUserInGroup} = require('../utils/permission');
 const bodyParser = require('body-parser');
 const express = require('express');
+const { Types } = require('mongoose');
 const app = express();
 app.use(bodyParser.json());
 
@@ -206,7 +207,7 @@ const createGroup = async (req, res) => {
       }
     }
 
-    console.log(newGroup);
+    // console.log(newGroup);
     res.status(201).json({ message: "Nhóm đã được tạo thành công", group: newGroup });
   } catch (error) {
     console.error("Lỗi khi tạo nhóm:", error);
@@ -314,11 +315,11 @@ const addMember = async (req, res) => {
     if (!group) {
       return res.status(404).json({ error: "Không tìm thấy nhóm" });
     }
-    console.log(group.members);
+    // console.log(group.members);
     const memberIndex = group.members.findIndex(
       (member) => member.userId.toString() === userId
     );
-    console.log(memberIndex);
+    // console.log(memberIndex);
     if (memberIndex !== -1) {
       return res
         .status(400)
@@ -335,8 +336,8 @@ const addMember = async (req, res) => {
     });
     user.groupDetails.push(newGroupDetails._id);
     group.members.push(newMember);
-    console.log(group);
-    console.log(newGroupDetails);
+    // console.log(group);
+    // console.log(newGroupDetails);
     await newGroupDetails.save();
     await group.save();
     await user.save();
@@ -402,15 +403,11 @@ const outGroup = async (req, res) => {
     const memberIndex = members.findIndex(
       (member) => member.userId.toString() === userId
     );
-
     // Nếu không tìm thấy thành viên trong nhóm
     if (memberIndex === -1) {
       return res
         .status(404)
         .json({ error: "Không tìm thấy thành viên trong nhóm" });
-    }
-    if (memberIndex === 0) {
-      return res.status(400).json({ error: "Không thể rời khỏi nhóm" });
     }
 
     // Xóa thành viên ra khỏi nhóm
@@ -482,12 +479,12 @@ const grantPermissionMember = async (req, res)=> {
       return res.status(404).json({ error: "Không tìm thấy nhóm" });
     }
 
-    // if(group.ownerId !== reqUser )
-    //   return res.status(403).json({ error: "Không phải trưởng nhóm" })
+    if(!group.ownerId.equals(reqUser))
+      return res.status(403).json({ error: "Không phải trưởng nhóm" })
 
     //Tìm thành viên trong nhóm
     const memberInGroup = group.members.find(
-      (member) => member._id.toString() === userGrantId
+      (member) => member.userId.toString() === userGrantId
     );
     if (!memberInGroup) {
       return res
@@ -499,7 +496,7 @@ const grantPermissionMember = async (req, res)=> {
       const index = memberInGroup.roles.indexOf('admin');
       // Thêm quyền 'admin' nếu nó không tồn tại trong mảng roles của thành viên
       if (index === -1) {
-        memberInGroup.roles.push(Roles.ADMIN)
+        memberInGroup.roles.unshift(Roles.ADMIN)
         memberInGroup.addAt= new Date()
       }
     }
@@ -539,13 +536,8 @@ const deleteGroup = async (req, res) => {
     }
 
     // Kiểm tra xem người dùng có quyền "owner" trong nhóm không
-    const isOwner = group.members.some(
-      (member) =>
-        member.userId &&
-        member.roles &&
-        member.userId.toString() === userId &&
-        member.roles.includes("owner")
-    );
+    // console.log(group);
+    const isOwner = group.ownerId.toString() === userId;
 
     // Nếu người dùng không phải là "owner", trả về lỗi
     if (!isOwner) {
@@ -632,7 +624,7 @@ const getProfileGroup = async (req, res) => {
       return res.status(404).json(apiCode.error("Không tìm thấy nhóm"));
     }
     const members = group.members.map((member) => member.userId);
-    console.log("asd", members);
+    // console.log("asd", members);
     const users = await User.find({ _id: { $in: members } });
     const dataMember = {
       members: users.map((user) => ({
@@ -640,17 +632,17 @@ const getProfileGroup = async (req, res) => {
         displayName: user.displayName,
         photoURL: user.photoURL,
         roles: group.members.find(
-          (member) => member?.userId.toString() === user._id.toString()
+         (member) => member?.userId?.toString() === user._id.toString()
         ).roles[0],
       })),
     };
-    console.log("member",dataMember);
+    // console.log("member",dataMember);
     const data = {
       name: group.name,
       photoURL: group.photoURL,
       members: dataMember.members,
     };
-    console.log(data)
+    // console.log(data)
     res.status(200).json(apiCode.success(data, "Lấy thông tin nhóm thành công"));
   } catch (error) {
     console.error("Lỗi khi lấy thông tin nhóm:", error);
