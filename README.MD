@@ -128,33 +128,33 @@ PORT=3000
 ## Some picture for demo:
 
 ### Login
-<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.25.46.png">
+<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/demo/Screenshot%202024-06-30%20at%2000.25.46.png">
 
 ### Reset password
-<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.26.16.png">
+<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/demo/Screenshot%202024-06-30%20at%2000.26.16.png">
 
 ### Profile
-<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.34.53.png">
+<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/demo/Screenshot%202024-06-30%20at%2000.34.53.png">
 
 ### Friend list:
-<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.34.28.png">
+<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/demo/Screenshot%202024-06-30%20at%2000.34.28.png">
 
 ### Conversation:
-<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.31.06.png">
+<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/demo/Screenshot%202024-06-30%20at%2000.31.06.png">
 
 ### User profile
-<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.32.12.png">
+<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/demo/Screenshot%202024-06-30%20at%2000.32.12.png">
 
 ### Group info:
-<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.43.02.png">
+<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/demo/Screenshot%202024-06-30%20at%2000.43.02.png">
 
 ### Create group:
-<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.35.04.png">
+<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/demo/Screenshot%202024-06-30%20at%2000.35.04.png">
 
 ### Add friend to group:
-<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.32.49.png">
+<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/demo/Screenshot%202024-06-30%20at%2000.32.49.png">
 
 ### Messages (send emoji, text, image, file, video,...), forward, reaction, reply,... :
-<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.34.06.png">
-<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.33.46.png">
-<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/Screenshot%202024-06-30%20at%2000.48.18.png">
+<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/demo/Screenshot%202024-06-30%20at%2000.34.06.png">
+<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/demo/Screenshot%202024-06-30%20at%2000.33.46.png">
+<img width="1034" alt="Screen Shot 2024-04-20 at 02 30 56" src="https://github.com/bobbibao/cnm-meme-be/blob/main/demo/Screenshot%202024-06-30%20at%2000.48.18.png">
